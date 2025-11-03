@@ -533,26 +533,8 @@ ollama serve
 
 **Full pipeline (chained):**
 ```bash
-spark-submit \
-  --class com.rag.RAGDocNormalized \
-  --master local[*] \
-  target/scala-2.12/rag-assembly-1.0.jar \
-  pdfs.txt
-```
+ spark-submit --class com.rag.RAGDocNormalized --master "local[*]" /Users/moudgil/RagSpark/RagSpark/target/scala-2.12/RagSpark-assembly-0.1.0-SNAPSHOT.jar file:///Users/moudgil/RagSpark/RagSpark/pdf_list.txt file:///Users/moudgil/output/rag.doc_normalized
 
-**Individual steps:**
-```bash
-# Step 1
-spark-submit --class com.rag.RAGDocNormalized --master local[*] target/scala-2.12/rag-assembly-1.0.jar pdfs.txt
-
-# Step 2
-spark-submit --class com.rag.RAGChunks --master local[*] target/scala-2.12/rag-assembly-1.0.jar
-
-# Step 3
-spark-submit --class com.rag.RAGEmbeddings --master local[*] target/scala-2.12/rag-assembly-1.0.jar
-
-# Step 4
-spark-submit --class com.rag.RagLuceneIndex --master local[*] target/scala-2.12/rag-assembly-1.0.jar
 ```
 
 #### 5. Monitor logs
@@ -576,39 +558,32 @@ aws s3 cp pdfs.txt s3://your-bucket/input/
 ```
 
 #### 2. Run on EMR
-
+Run on main ec2 instance of cluster.
 **Document Normalization:**
 ```bash
-aws emr add-steps \
-  --cluster-id j-XXXXXXXXXXXXX \
-  --steps Type=Spark,Name="RAG Doc Normalize",ActionOnFailure=CONTINUE,\
-Args=[--class,com.rag.RAGDocNormalized,--master,yarn,--deploy-mode,cluster,\
-s3://your-bucket/jars/rag-assembly-1.0.jar,s3://your-bucket/input/pdfs.txt]
+spark-submit \
+  --class com.rag.RAGDocNormalized \
+  --master yarn \
+  --deploy-mode cluster \
+  --conf spark.sql.extensions=io.delta.sql.DeltaSparkSessionExtension \
+  --conf spark.sql.catalog.spark_catalog=org.apache.spark.sql.delta.catalog.DeltaCatalog \
+  --conf spark.executor.memory=4g \
+  --conf spark.driver.memory=4g \
+  --conf spark.executor.cores=2 \
+  --packages io.delta:delta-core_2.12:2.4.0 \
+  RagSpark-assembly-0.1.0-SNAPSHOT.jar \
+  s3://sparkrmr/pdf_list.txt \
+  s3://sparkrmr/rag-data/
+
 ```
 
-**Chunking:**
-```bash
-aws emr add-steps \
-  --cluster-id j-XXXXXXXXXXXXX \
-  --steps Type=Spark,Name="RAG Chunks",ActionOnFailure=CONTINUE,\
-Args=[--class,com.rag.RAGChunks,--master,yarn,--deploy-mode,cluster,\
-s3://your-bucket/jars/rag-assembly-1.0.jar]
-```
 
-**Indexing** (with skip embedding):
-```bash
-aws emr add-steps \
-  --cluster-id j-XXXXXXXXXXXXX \
-  --steps Type=Spark,Name="RAG Index",ActionOnFailure=CONTINUE,\
-Args=[--class,com.rag.RagLuceneIndex,--master,yarn,--deploy-mode,cluster,\
-s3://your-bucket/jars/rag-assembly-1.0.jar]
-```
 
 #### 3. Monitor
 
 ```bash
 # List logs
-aws s3 ls s3://your-bucket/rag/logs/audit/ --recursive
+aws s3 ls s3://your-bucket/rag-data/logs/ --recursive
 
 # View log
 aws s3 cp s3://your-bucket/rag/logs/audit/[filename].log - | less
