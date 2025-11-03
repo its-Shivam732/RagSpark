@@ -1,5 +1,6 @@
 
 ### 🔍 Understanding the Results/Audit Log
+For result metrics, I used an audit log–based design that tracks each important pipeline event and result. This ensures complete visibility into execution flow and simplifies validation and performance analysis.
 
 The audit log shows **three complete pipeline runs** demonstrating incremental processing:
 
