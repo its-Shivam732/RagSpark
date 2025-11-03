@@ -214,10 +214,7 @@ The `AuditLogger` tracks every pipeline execution with detailed metrics and stat
 **GitHub Repository:** [View Complete Audit Logs](https://github.com/its-Shivam732/RagSpark/blob/main/RagSpark/ResultAuditLog/rag_audit.log) 
 NOTE----these are just sample on few pdfs from MSR corpus ran on local.
 
-
----
-
-### 🔍 Understanding the Audit Log
+### 🔍 Understanding the Results/Audit Log
 
 The audit log shows **three complete pipeline runs** demonstrating incremental processing:
 
