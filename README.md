@@ -24,8 +24,6 @@ The result metrics are implemented using an audit log approach. To view details,
 - [Configuration](#configuration)
 - [Incremental Updates](#-incremental-updates)
 - [Performance](#-performance)
-- [Troubleshooting](#-troubleshooting)
-
 ---
 
 ## 🏗 Architecture
@@ -645,18 +643,6 @@ The pipeline processes **only new or modified content** at each stage.
 spark.sql("OPTIMIZE rag.chunks")
 spark.sql("OPTIMIZE rag.embeddings")
 ```
-
----
-
-## 🔧 Troubleshooting
-
-| Issue | Solution |
-|-------|----------|
-| **Out of Memory** | Reduce `batchSize` in Config |
-| **Ollama Connection Failed** | Check if service running: `ollama serve` |
-| **S3 Access Denied** | Verify EMR role has S3 permissions |
-| **Delta Table Not Found** | First run - tables created automatically |
-| **Index Corruption** | Delete index dir and rebuild |
 
 ---
 
