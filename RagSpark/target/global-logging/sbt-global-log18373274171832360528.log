@@ -1,0 +1,14 @@
+[0m[[0m[0mdebug[0m] [0m[0m> Exec(assembly, None, None)[0m
+[0m[[0m[0mdebug[0m] [0m[0mEvaluating tasks: assembly[0m
+[0m[[0m[0mdebug[0m] [0m[0mRunning task... Cancel: Signal, check cycles: false, forcegc: true[0m
+[0m[[0m[0minfo[0m] [0m[0mcompiling 6 Scala sources to /Users/moudgil/RagSpark/RagSpark/target/scala-2.12/classes ...[0m
+[0m[[0m[33mwarn[0m] [0m[0mone deprecation; re-run with -deprecation for details[0m
+[0m[[0m[33mwarn[0m] [0m[0mone warning found[0m
+[0m[[0m[0minfo[0m] [0m[0mdone compiling[0m
+[0m[[0m[33mwarn[0m] [0m[0mmultiple main classes detected: run 'show discoveredMainClasses' to see the list[0m
+[0m[[0m[0minfo[0m] [0m[0m8 file(s) merged using strategy 'First' (Run the task at debug level to see the details)[0m
+[0m[[0m[0minfo[0m] [0m[0m29 file(s) merged using strategy 'Discard' (Run the task at debug level to see the details)[0m
+[0m[[0m[0minfo[0m] [0m[0mBuilt: /Users/moudgil/RagSpark/RagSpark/target/scala-2.12/RagSpark-assembly-0.1.jar[0m
+[0m[[0m[0minfo[0m] [0m[0mJar hash: 56b74beb67045714244b5be898e75aca0d3033bf[0m
+[0m[[0m[32msuccess[0m] [0m[0mTotal time: 4 s, completed Oct 23, 2025, 7:39:55 PM[0m
+[0m[[0m[0mdebug[0m] [0m[0m> Exec(idea-shell, None, None)[0m

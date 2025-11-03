@@ -1,0 +1,17 @@
+[0m[[0m[0mdebug[0m] [0m[0m> Exec(assembly, None, None)[0m
+[0m[[0m[0mdebug[0m] [0m[0mEvaluating tasks: assembly[0m
+[0m[[0m[0mdebug[0m] [0m[0mRunning task... Cancel: Signal, check cycles: false, forcegc: true[0m
+[0m[[0m[0minfo[0m] [0m[0mcompiling 11 Scala sources to /Users/moudgil/RagSpark/RagSpark/target/scala-2.12/classes ...[0m
+[0m[[0m[33mwarn[0m] [0m[0m/Users/moudgil/RagSpark/RagSpark/src/main/scala/com/rag/Ollama.scala:118:20: The outer reference in this type test cannot be checked at run time.[0m
+[0m[[0m[33mwarn[0m] [0m[0m  final case class ChatMessage(role: String, content: String)[0m
+[0m[[0m[33mwarn[0m] [0m[0m                   ^[0m
+[0m[[0m[33mwarn[0m] [0m[0mone warning found[0m
+[0m[[0m[0minfo[0m] [0m[0mdone compiling[0m
+[0m[[0m[33mwarn[0m] [0m[0mmultiple main classes detected: run 'show discoveredMainClasses' to see the list[0m
+[0m[[0m[0minfo[0m] [0m[0m6 file(s) merged using strategy 'First' (Run the task at debug level to see the details)[0m
+[0m[[0m[0minfo[0m] [0m[0m119 file(s) merged using strategy 'Discard' (Run the task at debug level to see the details)[0m
+[0m[[0m[0minfo[0m] [0m[0m4 file(s) merged using strategy 'Concat' (Run the task at debug level to see the details)[0m
+[0m[[0m[0minfo[0m] [0m[0mBuilt: /Users/moudgil/RagSpark/RagSpark/target/scala-2.12/RagSpark-assembly-0.1.0-SNAPSHOT.jar[0m
+[0m[[0m[0minfo[0m] [0m[0mJar hash: 97a2c29bc56477244daba8d50ffc93b588cdd2b1[0m
+[0m[[0m[32msuccess[0m] [0m[0mTotal time: 4 s, completed Nov 2, 2025, 10:12:26 PM[0m
+[0m[[0m[0mdebug[0m] [0m[0m> Exec(idea-shell, None, None)[0m

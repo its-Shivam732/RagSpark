@@ -1,0 +1,29 @@
+[0m[[0m[0mdebug[0m] [0m[0m> Exec(assembly, None, None)[0m
+[0m[[0m[0mdebug[0m] [0m[0mEvaluating tasks: assembly[0m
+[0m[[0m[0mdebug[0m] [0m[0mRunning task... Cancel: Signal, check cycles: false, forcegc: true[0m
+[0m[[0m[0minfo[0m] [0m[0mcompiling 6 Scala sources to /Users/moudgil/RagSpark/RagSpark/target/scala-2.12/classes ...[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/moudgil/RagSpark/RagSpark/src/main/scala/com/rag/Ollama.scala:7:8: not found: object scalaj[0m
+[0m[[0m[31merror[0m] [0m[0mimport scalaj.http._[0m
+[0m[[0m[31merror[0m] [0m[0m       ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/moudgil/RagSpark/RagSpark/src/main/scala/com/rag/Ollama.scala:62:24: not found: value Http[0m
+[0m[[0m[31merror[0m] [0m[0m        val response = Http(eurl)[0m
+[0m[[0m[31merror[0m] [0m[0m                       ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/moudgil/RagSpark/RagSpark/src/main/scala/com/rag/Ollama.scala:66:20: not found: value connTimeoutMs[0m
+[0m[[0m[31merror[0m] [0m[0m          .timeout(connTimeoutMs = 5000, readTimeoutMs = 60000)[0m
+[0m[[0m[31merror[0m] [0m[0m                   ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/moudgil/RagSpark/RagSpark/src/main/scala/com/rag/Ollama.scala:66:42: not found: value readTimeoutMs[0m
+[0m[[0m[31merror[0m] [0m[0m          .timeout(connTimeoutMs = 5000, readTimeoutMs = 60000)[0m
+[0m[[0m[31merror[0m] [0m[0m                                         ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/moudgil/RagSpark/RagSpark/src/main/scala/com/rag/Ollama.scala:136:22: not found: value Http[0m
+[0m[[0m[31merror[0m] [0m[0m      val response = Http(curl)[0m
+[0m[[0m[31merror[0m] [0m[0m                     ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/moudgil/RagSpark/RagSpark/src/main/scala/com/rag/Ollama.scala:140:18: not found: value connTimeoutMs[0m
+[0m[[0m[31merror[0m] [0m[0m        .timeout(connTimeoutMs = 5000, readTimeoutMs = 120000)[0m
+[0m[[0m[31merror[0m] [0m[0m                 ^[0m
+[0m[[0m[31merror[0m] [0m[0m/Users/moudgil/RagSpark/RagSpark/src/main/scala/com/rag/Ollama.scala:140:40: not found: value readTimeoutMs[0m
+[0m[[0m[31merror[0m] [0m[0m        .timeout(connTimeoutMs = 5000, readTimeoutMs = 120000)[0m
+[0m[[0m[31merror[0m] [0m[0m                                       ^[0m
+[0m[[0m[31merror[0m] [0m[0m7 errors found[0m
+[0m[[0m[31merror[0m] [0m[0m(Compile / [31mcompileIncremental[0m) Compilation failed[0m
+[0m[[0m[31merror[0m] [0m[0mTotal time: 1 s, completed Oct 25, 2025, 9:18:43 PM[0m
+[0m[[0m[0mdebug[0m] [0m[0m> Exec(idea-shell, None, None)[0m
