@@ -584,6 +584,7 @@ spark-submit \
 ```bash
 # List logs
 aws s3 ls s3://your-bucket/rag-data/logs/ --recursive
+```
 
 
 ---
