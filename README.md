@@ -14,8 +14,8 @@ A complete **Retrieval-Augmented Generation (RAG)** pipeline built with Scala, A
   - [Step 2: Document Chunking](#step-2-document-chunking)
   - [Step 3: Embedding Generation](#step-3-embedding-generation)
   - [Step 4: Lucene Index Building](#step-4-lucene-index-building)
-- [Data Flow](#-data-flow)
 - [Results](#-resultsaudit-logs)
+- [Data Flow](#-data-flow)
 - [Getting Started](#-getting-started)
   - [Prerequisites](#prerequisites)
   - [Local Mode](#local-mode)
@@ -184,21 +184,6 @@ Each Lucene document contains:
 
 ---
 
-## 📊 Data Flow
-
-```mermaid
-graph TD
-    A[PDF List] --> B[STEP 1: Document Normalization]
-    B --> C[rag.doc_normalized]
-    C --> D[STEP 2: Document Chunking]
-    D --> E[rag.chunks]
-    E --> F[STEP 3: Embedding Generation]
-    F --> G[rag.embeddings]
-    E --> H[STEP 4: Lucene Index Building]
-    G --> H
-    H --> I[Lucene Index Shards]
-    H --> J[rag.indexed_chunks]
-```
 
 ---
 
@@ -435,7 +420,21 @@ PIPELINE RUN COMPLETED SUCCESSFULLY
 
 ---
 
+## 📊 Data Flow
 
+```mermaid
+graph TD
+    A[PDF List] --> B[STEP 1: Document Normalization]
+    B --> C[rag.doc_normalized]
+    C --> D[STEP 2: Document Chunking]
+    D --> E[rag.chunks]
+    E --> F[STEP 3: Embedding Generation]
+    F --> G[rag.embeddings]
+    E --> H[STEP 4: Lucene Index Building]
+    G --> H
+    H --> I[Lucene Index Shards]
+    H --> J[rag.indexed_chunks]
+```
 ---
 
 ## 🚀 Getting Started
