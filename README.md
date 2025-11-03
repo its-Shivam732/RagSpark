@@ -1,33 +1,35 @@
 # RAG Pipeline Documentation
 
-## Overview
 
-This is a complete **Retrieval-Augmented Generation (RAG)** pipeline built with Scala, Apache Spark, Delta Lake, and Apache Lucene. The pipeline processes PDF documents, generates embeddings, and builds searchable vector indexes for efficient semantic search and retrieval.
-
-## Table of Contents
-
-- [Architecture](#architecture)
-- [Pipeline Flow](#pipeline-flow)
-  - [Step 1: Document Normalization](#step-1-document-normalization-ragdocnormalized)
-  - [Step 2: Document Chunking](#step-2-document-chunking-ragchunks)
-  - [Step 3: Embedding Generation](#step-3-embedding-generation-ragembeddings)
-  - [Step 4: Lucene Index Building](#step-4-lucene-index-building-ragluceneindex)
-- [Data Flow Diagram](#data-flow-diagram)
-- [Audit Logs](#audit-logs)
-- [Running the Pipeline](#running-the-pipeline)
-  - [Prerequisites](#prerequisites)
-  - [Local Mode](#local-mode)
-  - [EMR Mode](#emr-mode)
-- [Configuration](#configuration)
-- [Incremental Updates](#incremental-updates)
-- [Project Structure](#project-structure)
-- [Technology Stack](#technology-stack)
+A complete **Retrieval-Augmented Generation (RAG)** pipeline built with Scala, Apache Spark, Delta Lake, and Apache Lucene. Process PDF documents, generate embeddings, and build searchable vector indexes for efficient semantic search and retrieval.
 
 ---
 
-## Architecture
+## 📋 Table of Contents
 
-The RAG pipeline consists of four main stages that transform raw PDF documents into a searchable vector index:
+- [Architecture](#-architecture)
+- [Pipeline Flow](#-pipeline-flow)
+  - [Step 1: Document Normalization](#step-1-document-normalization)
+  - [Step 2: Document Chunking](#step-2-document-chunking)
+  - [Step 3: Embedding Generation](#step-3-embedding-generation)
+  - [Step 4: Lucene Index Building](#step-4-lucene-index-building)
+- [Data Flow](#-data-flow)
+- [Audit Logs](#-audit-logs)
+- [Getting Started](#-getting-started)
+  - [Prerequisites](#prerequisites)
+  - [Local Mode](#local-mode)
+  - [EMR Mode](#emr-mode)
+- [Configuration](#-configuration)
+- [Incremental Updates](#-incremental-updates)
+- [Project Structure](#-project-structure)
+- [Performance](#-performance)
+- [Troubleshooting](#-troubleshooting)
+
+---
+
+## 🏗 Architecture
+
+The pipeline transforms raw PDFs into a searchable vector index through four stages:
 
 ```
 PDFs → Normalize → Chunk → Embed → Index
@@ -36,786 +38,747 @@ Input   Delta    Delta   Delta   Lucene
 Files   Table    Table   Table   Shards
 ```
 
-Each stage:
-- Processes data incrementally (only new/changed content)
-- Uses Delta Lake for ACID transactions and versioning
-- Supports both local development and distributed EMR execution
-- Maintains comprehensive audit logs
+**Key Features:**
+- ✅ Incremental processing (only new/changed content)
+- ✅ ACID transactions via Delta Lake
+- ✅ Distributed processing on EMR
+- ✅ Comprehensive audit logging
+- ✅ S3 integration
 
 ---
 
-## Pipeline Flow
+## 🔄 Pipeline Flow
 
-### Step 1: Document Normalization (`RAGDocNormalized`)
+### Step 1: Document Normalization
 
-**Purpose**: Extract and normalize text from PDF documents.
+> **Class:** `RAGDocNormalized`
 
-**Input**: 
-- Text file containing list of PDF URIs (one per line)
-- PDFs can be from local filesystem, S3, or HTTP
+Extract and normalize text from PDF documents.
 
-**Process**:
-1. Read list of PDF file paths
-2. Extract text from each PDF using Apache PDFBox
-3. Normalize whitespace (collapse multiple spaces, trim)
-4. Generate metadata:
-   - `docId`: SHA-256 hash of URI (unique document identifier)
-   - `contentHash`: SHA-256 hash of text content (for change detection)
-   - `title`: First 80 characters of text
-   - `language`: Currently hardcoded to "en"
-   - `version_ts`: Processing timestamp
-5. Compare with existing documents in Delta table
-6. Upsert only new or modified documents
+**Input:**
+- Text file with PDF URIs (one per line)
+- Supports: local filesystem, S3, HTTP
 
-**Output**: Delta table `rag.doc_normalized` with columns:
+**Process:**
+1. Extract text from PDFs using Apache PDFBox
+2. Normalize whitespace
+3. Generate metadata (docId, contentHash, title)
+4. Compare with existing documents
+5. Upsert only new/modified documents
+
+**Output:** Delta table `rag.doc_normalized`
+
 ```
-docId, uri, text, contentHash, language, title, version_ts
+Schema: docId, uri, text, contentHash, language, title, version_ts
 ```
 
-**Incremental Updates**:
-- Documents are identified by (docId, contentHash)
-- Only documents with new content are re-processed
-- Supports both new documents and content updates
+<details>
+<summary><b>Key Features</b></summary>
 
-**Key Features**:
-- Handles S3, local, and HTTP URIs
-- Graceful error handling (corrupted PDFs don't stop pipeline)
-- Parallel processing (repartitioned across 10 partitions)
+- **Parallel processing:** Repartitioned across 10 partitions
+- **Error handling:** Corrupted PDFs don't stop pipeline
+- **Multi-protocol:** S3, local, and HTTP URIs
+- **Change detection:** SHA-256 content hashing
+</details>
 
 ---
 
-### Step 2: Document Chunking (`RAGChunks`)
+### Step 2: Document Chunking
 
-**Purpose**: Split documents into overlapping chunks for better embedding and retrieval.
+> **Class:** `RAGChunks`
 
-**Input**: Delta table `rag.doc_normalized`
+Split documents into overlapping chunks for better embedding and retrieval.
 
-**Process**:
+**Input:** Delta table `rag.doc_normalized`
+
+**Process:**
 1. Load normalized documents
-2. Identify documents needing chunking (new or content changed)
-3. Split each document into chunks:
-   - **Max chunk size**: 1200 characters
-   - **Overlap**: 200 characters (preserves context across boundaries)
-4. Generate chunk metadata:
-   - `chunkId`: SHA-256(docId:offset) - deterministic, position-based ID
-   - `chunkHash`: SHA-256(chunk text) - for change detection
-   - `offset`: Position in document (enables proper ordering)
-5. Filter out unchanged chunks (optimization)
-6. Upsert chunks into Delta table
+2. Identify documents needing chunking
+3. Split into chunks (1200 chars, 200 char overlap)
+4. Generate chunk metadata
+5. Upsert chunks into Delta table
 
-**Output**: Delta table `rag.chunks` with columns:
+**Output:** Delta table `rag.chunks`
+
 ```
-chunkId, docId, docHash, offset, chunk, chunkHash, language, title, version_ts
+Schema: chunkId, docId, docHash, offset, chunk, chunkHash, language, title, version_ts
 ```
 
-**Chunking Strategy**:
-- **Why 1200 chars?** Fits within embedding model token limits while maintaining context
-- **Why 200 char overlap?** Ensures sentences/concepts split across chunks are still captured
-- **Position-based IDs**: Same chunk always gets same ID, enabling efficient updates
+<details>
+<summary><b>Chunking Strategy</b></summary>
 
-**Incremental Updates**:
-- Only re-chunks documents with changed content (docHash comparison)
-- Even within changed documents, filters out chunks with unchanged content
-- Two-level optimization: document-level and chunk-level
+- **Max size:** 1200 characters (fits embedding model limits)
+- **Overlap:** 200 characters (preserves context)
+- **IDs:** Position-based (deterministic)
+- **Optimization:** Two-level (document + chunk)
+</details>
 
 ---
 
-### Step 3: Embedding Generation (`RAGEmbeddings`)
+### Step 3: Embedding Generation
 
-**Purpose**: Generate vector embeddings for each chunk using an embedding model.
+> **Class:** `RAGEmbeddings`
 
-**Input**: Delta table `rag.chunks`
+Generate vector embeddings for each chunk using Ollama.
 
-**Process**:
+**Input:** Delta table `rag.chunks`
+
+**Process:**
 1. Load chunks from Delta table
-2. Identify chunks needing embeddings:
-   - New chunks (not in embeddings table)
-   - Modified chunks (different chunkHash)
-3. Generate embeddings in batches:
-   - Default batch size: configurable (prevents memory issues)
-   - Uses Ollama service with `mxbai-embed-large` model
-4. Normalize vectors (L2 normalization):
-   - Ensures all vectors have unit length
-   - Improves similarity comparison accuracy
-5. Handle batch failures gracefully (one batch failure doesn't stop pipeline)
-6. Upsert embeddings into Delta table
+2. Identify chunks needing embeddings
+3. Generate embeddings in batches via Ollama
+4. Normalize vectors (L2 normalization)
+5. Upsert embeddings into Delta table
 
-**Output**: Delta table `rag.embeddings` with columns:
+**Output:** Delta table `rag.embeddings`
+
 ```
-chunkId, chunkHash, embedder, embedder_ver, vector, version_ts
+Schema: chunkId, chunkHash, embedder, embedder_ver, vector, version_ts
 ```
 
-**Embedding Details**:
-- **Model**: mxbai-embed-large (configurable via Config)
-- **Vector dimensions**: Model-dependent (typically 768 or 1024)
-- **Normalization**: L2 normalization for cosine similarity
-- **Batch processing**: Reduces memory usage and API rate limiting
+<details>
+<summary><b>Embedding Details</b></summary>
 
-**Skip Mode** (for EMR):
-- Can set `SKIP_EMBEDDING=true` to skip generation on EMR
-- Useful when embeddings are pre-computed locally and uploaded to S3
-- Allows separation of compute-intensive embedding from distributed indexing
-
-**Incremental Updates**:
-- Tracks (chunkId, chunkHash, embedder, embedder_ver)
-- Only generates embeddings for new/modified chunks
-- Supports model upgrades (different embedder_ver triggers re-embedding)
+- **Model:** mxbai-embed-large (configurable)
+- **Normalization:** L2 for cosine similarity
+- **Batch processing:** Prevents memory issues
+- **Skip mode:** For EMR (pre-compute locally)
+</details>
 
 ---
 
-### Step 4: Lucene Index Building (`RagLuceneIndex`)
+### Step 4: Lucene Index Building
 
-**Purpose**: Build distributed Lucene indexes for efficient vector similarity search.
+> **Class:** `RagLuceneIndex`
 
-**Input**: 
+Build distributed Lucene indexes for vector similarity search.
+
+**Input:** 
 - Delta table `rag.chunks`
 - Delta table `rag.embeddings`
 
-**Process**:
-1. Join chunks with embeddings on chunkId
-2. Identify chunks needing indexing:
-   - New chunks (not in indexed metadata)
-   - Modified chunks (different chunkHash)
-3. Partition data into shards:
-   - Uses CRC32(docId) % numShards
-   - Keeps all chunks from same document in same shard
-4. Build/update Lucene indexes in parallel:
-   - Each Spark partition processes one shard
-   - Creates/updates Lucene index with:
-     - Full-text fields (text)
-     - Vector fields (KnnFloatVectorField)
-     - Metadata fields (docId, chunkId, offset)
-5. For S3 storage:
-   - Write to local temp directory
-   - Sync to S3 using Hadoop FileSystem API
-6. Update indexed metadata table
+**Process:**
+1. Join chunks with embeddings
+2. Identify chunks needing indexing
+3. Partition into shards (CRC32 hashing)
+4. Build Lucene indexes in parallel
+5. Sync to S3 if needed
 
-**Output**: 
+**Output:** 
 - Lucene index shards in `Config.indexPath/shard_N/`
-- Delta table `rag.indexed_chunks` with columns:
-  ```
-  chunkId, chunkHash, docId, indexed_ts
-  ```
+- Delta table `rag.indexed_chunks`
 
-**Index Structure**:
+<details>
+<summary><b>Index Structure</b></summary>
+
 Each Lucene document contains:
-- **StringField**: doc_id, chunk_id, chunk_hash (exact match, stored)
-- **TextField**: text (tokenized, searchable, stored)
-- **LongPoint**: offset (range queries, not stored)
-- **StoredField**: offset (stored but not indexed)
-- **KnnFloatVectorField**: vector (similarity search)
+- **StringField:** doc_id, chunk_id, chunk_hash
+- **TextField:** text (searchable)
+- **LongPoint:** offset (range queries)
+- **KnnFloatVectorField:** vector (similarity search)
 
-**Sharding Strategy**:
-- **Why shard?** Enables parallel query processing and scales horizontally
-- **Why CRC32(docId)?** Deterministic - same document always goes to same shard
-- **Benefit**: Related chunks stay together for better query performance
-
-**Vector Similarity Functions**:
-- **COSINE** (default): Best for normalized vectors
-- **EUCLIDEAN**: Good for absolute distances
-- **DOT_PRODUCT**: Fast but requires normalized vectors
-- Configurable via `RAG_SIMILARITY` environment variable
-
-**Incremental Updates**:
-- Tracks (chunkId, chunkHash) in metadata table
-- Distinguishes between inserts (new) and updates (modified)
-- Updates delete old document and add new one (no duplicates)
-
-**S3 Support**:
-- Lucene cannot write directly to S3
-- Solution: Write to local temp, then sync to S3
-- Uses Hadoop FileSystem API for reliable S3 uploads
+**Similarity Functions:**
+- COSINE (default)
+- EUCLIDEAN
+- DOT_PRODUCT
+</details>
 
 ---
 
-## Data Flow Diagram
+## 📊 Data Flow
 
-```
-┌─────────────┐
-│  PDF List   │
-│  (input)    │
-└──────┬──────┘
-       │
-       ▼
-┌──────────────────────────────────────────┐
-│  STEP 1: Document Normalization          │
-│  - Extract text from PDFs                │
-│  - Normalize whitespace                  │
-│  - Generate docId & contentHash          │
-└──────┬───────────────────────────────────┘
-       │
-       ▼
-┌─────────────────────┐
-│  rag.doc_normalized │  ◄─── Incremental: Only new/changed docs
-│  Delta Table        │
-└──────┬──────────────┘
-       │
-       ▼
-┌──────────────────────────────────────────┐
-│  STEP 2: Document Chunking                │
-│  - Split docs into 1200-char chunks      │
-│  - 200-char overlap for context          │
-│  - Generate chunkId & chunkHash          │
-└──────┬───────────────────────────────────┘
-       │
-       ▼
-┌─────────────────────┐
-│    rag.chunks       │  ◄─── Incremental: Only new/changed chunks
-│    Delta Table      │
-└──────┬──────────────┘
-       │
-       ▼
-┌──────────────────────────────────────────┐
-│  STEP 3: Embedding Generation             │
-│  - Generate vectors via Ollama           │
-│  - L2 normalize vectors                  │
-│  - Batch processing                      │
-└──────┬───────────────────────────────────┘
-       │
-       ▼
-┌─────────────────────┐
-│  rag.embeddings     │  ◄─── Incremental: Only new/changed chunks
-│  Delta Table        │
-└──────┬──────────────┘
-       │
-       ▼
-┌──────────────────────────────────────────┐
-│  STEP 4: Lucene Index Building            │
-│  - Join chunks + embeddings              │
-│  - Shard by docId                        │
-│  - Build Lucene indexes in parallel      │
-│  - Sync to S3 if needed                  │
-└──────┬───────────────────────────────────┘
-       │
-       ▼
-┌─────────────────────┐
-│  Lucene Index       │  ◄─── Sharded: shard_0, shard_1, ...
-│  (searchable)       │       + rag.indexed_chunks metadata
-└─────────────────────┘
+```mermaid
+graph TD
+    A[PDF List] --> B[STEP 1: Document Normalization]
+    B --> C[rag.doc_normalized]
+    C --> D[STEP 2: Document Chunking]
+    D --> E[rag.chunks]
+    E --> F[STEP 3: Embedding Generation]
+    F --> G[rag.embeddings]
+    E --> H[STEP 4: Lucene Index Building]
+    G --> H
+    H --> I[Lucene Index Shards]
+    H --> J[rag.indexed_chunks]
 ```
 
 ---
 
-## Audit Logs
+## 📝 Audit Logs
 
-The `AuditLogger` maintains comprehensive logs throughout the pipeline execution.
+The `AuditLogger` tracks every pipeline execution with detailed metrics and status updates.
 
-### Log Types
+### 📍 Log Location
 
-1. **Audit Logs** (`rag_audit.log`):
-   - High-level pipeline events
-   - Step start/completion
-   - Document/chunk counts
-   - Success/failure indicators
-   - Performance metrics
+**GitHub Repository:** [View Complete Audit Logs](https://github.com/its-Shivam732/RagSpark/blob/main/RagSpark/ResultAuditLog/rag_audit.log)
 
-2. **Pipeline Logs** (`rag_pipeline.log`):
-   - Detailed processing information
-   - Individual batch results
-   - Error details
-   - Debug information
-
-### Log Content Examples
-
-**Step 1 (Document Normalization)**:
+**Local Mode:**
 ```
-2025-01-01 10:00:00 | 🚀 NEW PIPELINE RUN STARTING AT: 2025-01-01T10:00:00
-2025-01-01 10:00:00 | STEP 1: Document Normalization
-2025-01-01 10:00:05 | Total PDFs in input list: 150
-2025-01-01 10:02:30 | PDF extraction: 148 successful, 2 failed
-2025-01-01 10:02:35 | Found 25 NEW or CHANGED documents (out of 148 total)
-2025-01-01 10:02:35 |   - NEW documents: 20
-2025-01-01 10:02:35 |   - CHANGED documents (content updated): 5
-2025-01-01 10:03:00 | Delta table before: 150 docs, after: 170 docs
-2025-01-01 10:03:00 | ✅ STEP 1 COMPLETE
+/Users/moudgil/output/logs/rag_audit.log
 ```
 
-**Step 2 (Chunking)**:
+**EMR Mode:**
 ```
-2025-01-01 10:03:01 | STEP 2: Document Chunking
-2025-01-01 10:03:05 | Loaded 170 documents from rag.doc_normalized
-2025-01-01 10:03:06 | Found 25 documents needing chunking (new or content changed)
-2025-01-01 10:03:20 | Generated 487 chunks from 25 documents
-2025-01-01 10:03:21 | Chunks to upsert: 487 (new or content changed)
-2025-01-01 10:03:45 | Chunks table updated (after: 3245 chunks, added: 487)
-2025-01-01 10:03:45 | ✅ STEP 2 COMPLETE: rag.chunks updated
-```
-
-**Step 3 (Embeddings)**:
-```
-2025-01-01 10:03:46 | STEP 3: Embedding Generation
-2025-01-01 10:03:50 | Loaded 3245 chunks from rag.chunks
-2025-01-01 10:03:51 | Found 487 chunks needing embeddings (new or content changed)
-2025-01-01 10:03:51 | Generating embeddings in 10 batches (batch size: 50)
-2025-01-01 10:05:20 | Batch 1: Successfully embedded 50 chunks
-...
-2025-01-01 10:12:45 | Embedding results: 487 successful, 0 failed
-2025-01-01 10:12:50 | Embeddings table updated (after: 3245, added: 487)
-2025-01-01 10:12:50 | ✅ STEP 3 COMPLETE: rag.embeddings updated
-```
-
-**Step 4 (Indexing)**:
-```
-2025-01-01 10:12:51 | STEP 4: Lucene Index Building
-2025-01-01 10:12:55 | Loaded 3245 chunks from rag.chunks
-2025-01-01 10:12:56 | Loaded 3245 embeddings from rag.embeddings
-2025-01-01 10:12:57 | After join: 3245 chunks with valid embeddings
-2025-01-01 10:12:58 | Found 487 chunks needing indexing (new or content changed)
-2025-01-01 10:12:58 |   - INSERTS (new chunks): 487
-2025-01-01 10:12:58 |   - UPDATES (content changed): 0
-2025-01-01 10:12:59 | Partitioning data into 4 shards (keeping documents together)
-2025-01-01 10:12:59 | Shard distribution:
-2025-01-01 10:12:59 |   Shard  0:    121 chunks from 8 documents
-2025-01-01 10:12:59 |   Shard  1:    119 chunks from 6 documents
-2025-01-01 10:12:59 |   Shard  2:    123 chunks from 5 documents
-2025-01-01 10:12:59 |   Shard  3:    124 chunks from 6 documents
-2025-01-01 10:15:30 | Shard 0: added=   121  updated=     0
-2025-01-01 10:15:30 | Shard 1: added=   119  updated=     0
-2025-01-01 10:15:30 | Shard 2: added=   123  updated=     0
-2025-01-01 10:15:30 | Shard 3: added=   124  updated=     0
-2025-01-01 10:15:31 | Index Statistics:
-2025-01-01 10:15:31 |   Total shards: 4
-2025-01-01 10:15:31 |   Total documents added: 487
-2025-01-01 10:15:31 |   Total documents updated: 0
-2025-01-01 10:15:31 | ✅ STEP 4 COMPLETE: Lucene index updated successfully
-2025-01-01 10:15:31 | PIPELINE RUN COMPLETED SUCCESSFULLY
-```
-
-### Log Locations
-
-**Local Mode**:
-```
-/Users/moudgil/output/logs/
-├── rag_audit.log      # High-level events
-└── rag_pipeline.log   # Detailed logs
-```
-
-**EMR Mode**:
-```
-s3://your-bucket/rag/logs/
-├── audit/
-│   ├── RAGDocNormalized_20250101_100000_1234567890.log
-│   ├── RAGChunks_20250101_100301_1234567891.log
-│   ├── RAGEmbeddings_20250101_100346_1234567892.log
-│   └── RagLuceneIndex_20250101_101251_1234567893.log
-└── pipeline/
-    ├── RAGDocNormalized_20250101_100000_1234567890.log
-    ├── RAGChunks_20250101_100301_1234567891.log
-    ├── RAGEmbeddings_20250101_100346_1234567892.log
-    └── RagLuceneIndex_20250101_101251_1234567893.log
+s3://your-bucket/rag/logs/audit/[JobName]_[Timestamp].log
 ```
 
 ---
 
-## Running the Pipeline
+### 🔍 Understanding the Audit Log
+
+The audit log shows **three complete pipeline runs** demonstrating incremental processing:
+
+#### **Run 1: Initial Pipeline (First Run)**
+*Duration: 49 seconds (15:55:27 - 15:56:16)*
+
+```
+🚀 NEW PIPELINE RUN STARTING AT: 2025-11-02T15:55:27
+```
+
+| Step | What Happened | Metrics |
+|------|---------------|---------|
+| **Step 1: Document Normalization** | First run - created Delta table | 7 PDFs → 7 documents extracted |
+| **Step 2: Document Chunking** | First run - created chunks table | 7 docs → 1,604 chunks |
+| **Step 3: Embedding Generation** | First run - created embeddings table | 1,604 chunks → 1,604 embeddings (51 batches) |
+| **Step 4: Lucene Index Building** | First run - created index | 1,370 chunks indexed across 4 shards |
+
+**Key Observations:**
+- ✅ All data is new (first run)
+- ✅ Created all Delta tables from scratch
+- ✅ Pipeline completed successfully in ~49 seconds
+- 📊 **Efficiency note:** Only 1,370 out of 1,604 chunks indexed (234 chunks filtered due to empty/invalid vectors)
+
+---
+
+#### **Run 2: Incremental Update (2 New PDFs Added)**
+*Duration: 39 seconds (15:58:54 - 15:59:33)*
+
+```
+🚀 NEW PIPELINE RUN STARTING AT: 2025-11-02T15:58:54
+```
+
+| Step | What Happened | Metrics |
+|------|---------------|---------|
+| **Step 1: Document Normalization** | Detected 2 new PDFs | 9 PDFs in list → 2 NEW documents |
+| **Step 2: Document Chunking** | Chunked only new documents | 2 docs → 440 new chunks |
+| **Step 3: Embedding Generation** | Generated embeddings for new chunks | 440 chunks → 440 embeddings (14 batches) |
+| **Step 4: Lucene Index Building** | Indexed only new chunks | 440 INSERTS → Total: 1,810 indexed |
+
+**Key Observations:**
+- ✅ **Incremental processing:** Only 2 new documents processed
+- ✅ **Skip existing:** 7 existing documents untouched
+- ✅ **Net change:** +2 documents, +440 chunks, +440 embeddings
+- ⚡ **Faster:** Completed in 39 seconds (vs 49 for full pipeline)
+
+---
+
+#### **Run 3: Content Update (1 PDF Modified)**
+*Duration: 28 seconds (16:01:38 - 16:02:06)*
+
+```
+🚀 NEW PIPELINE RUN STARTING AT: 2025-11-02T16:01:38
+```
+
+| Step | What Happened | Metrics |
+|------|---------------|---------|
+| **Step 1: Document Normalization** | Detected 1 changed document | 9 PDFs → 1 CHANGED: `MSR.2007.19.pdf` |
+| **Step 2: Document Chunking** | Re-chunked modified document | 1 doc → 217 chunks generated, **1 chunk changed** |
+| **Step 3: Embedding Generation** | Re-embedded changed chunk | **1 chunk** → 1 embedding (1 batch) |
+| **Step 4: Lucene Index Building** | Updated index for changed chunk | **1 UPDATE** (deleted old, added new) |
+
+**Key Observations:**
+- ✅ **Content change detection:** SHA-256 hash detected modified content
+- ✅ **Chunk-level optimization:** Only 1 out of 217 chunks actually changed
+- ✅ **Update operation:** Deleted old chunk, added new one
+- ⚡ **Super fast:** Completed in 28 seconds (only 1 chunk processed)
+
+---
+
+#### **Run 4+: No Changes Detected**
+*Duration: ~5 seconds (22:12:44 - 22:12:57)*
+
+```
+🚀 NEW PIPELINE RUN STARTING AT: 2025-11-02T22:12:44
+```
+
+| Step | Status | Message |
+|------|--------|---------|
+| **Step 1** | ⏭️ Skipped | (No Step 1 log - ran steps 2-4 independently) |
+| **Step 2** | ✅ Skipped | `NO DOCUMENTS NEED RE-CHUNKING` |
+| **Step 3** | ✅ Skipped | `NO CHUNKS NEED EMBEDDING` |
+| **Step 4** | ✅ Skipped | `NO NEW OR UPDATED CHUNKS TO INDEX` |
+
+**Key Observations:**
+- ✅ **Nothing to do:** All content up-to-date
+- ✅ **Lightning fast:** Completed in ~5 seconds
+- ✅ **Idempotent:** Safe to re-run pipeline anytime
+- 💰 **Cost efficient:** No compute wasted on unchanged data
+
+---
+
+### 📊 Log Patterns Explained
+
+#### **Pipeline Start**
+```
+================================================================================
+🚀 NEW PIPELINE RUN STARTING AT: 2025-11-02T15:55:27
+================================================================================
+STEP 1: Document Normalization
+--------------------------------------------------------------------------------
+```
+- Marks beginning of new pipeline execution
+- Timestamp for tracking duration
+- Visual separators for readability
+
+---
+
+#### **Step 1: Document Normalization**
+```
+Total PDFs in input list: 9
+Found existing Delta table with 9 documents
+PDF extraction: 9 successful, 0 failed
+Found 2 NEW or CHANGED documents (out of 9 total)
+  - NEW documents: 2
+  - CHANGED documents (content updated): 0
+Delta table before: 7 docs, after: 9 docs
+Net change: +2 documents
+✅ STEP 1 COMPLETE
+```
+
+**What to look for:**
+- **Input size:** Total PDFs to process
+- **Success rate:** How many PDFs extracted successfully
+- **Change breakdown:** New vs modified documents
+- **Delta stats:** Before/after counts and net change
+- **Status:** ✅ (success) or ❌ (failure)
+
+---
+
+#### **Step 2: Document Chunking**
+```
+Loaded 9 documents from rag.doc_normalized
+Found existing chunks table with 9 unique documents
+Found 2 documents needing chunking (new or content changed)
+Generated 440 chunks from 2 documents
+Chunks to upsert: 440 (new or content changed)
+Chunks table updated (after: 2044 chunks, added: 440)
+✅ STEP 2 COMPLETE: rag.chunks updated
+```
+
+**What to look for:**
+- **Input:** Documents loaded from previous step
+- **Incremental:** How many docs need chunking
+- **Chunk generation:** Total chunks created
+- **Optimization:** Chunks filtered (unchanged content)
+- **Delta stats:** Total chunks and additions
+
+---
+
+#### **Step 3: Embedding Generation**
+```
+Loaded 2044 chunks from rag.chunks
+Using embedding model: mxbai-embed-large v1.3.0
+Found existing embeddings table with 1604 chunks
+Found 440 chunks needing embeddings (new or content changed)
+Generating embeddings in 14 batches (batch size: 32)
+Embedding results: 440 successful, 0 failed
+Embeddings table updated (after: 2044, added: 440)
+✅ STEP 3 COMPLETE: rag.embeddings updated
+```
+
+**What to look for:**
+- **Model info:** Which embedding model and version
+- **Incremental:** Only new/modified chunks embedded
+- **Batch processing:** Number of batches (shows progress)
+- **Success rate:** Successful vs failed embeddings
+- **Performance:** Time per batch (visible in timestamps)
+
+---
+
+#### **Step 4: Lucene Index Building**
+```
+Loaded 2044 chunks from rag.chunks
+Loaded 2044 embeddings from rag.embeddings
+After join: 1810 chunks with valid embeddings
+Found 440 chunks needing indexing (new or content changed)
+  - INSERTS (new chunks): 440
+  - UPDATES (content changed): 0
+Partitioning data into 4 shards (keeping documents together)
+Shard distribution:
+  Shard  2:    223 chunks from 1 documents
+  Shard  3:    217 chunks from 1 documents
+Using vector similarity function: COSINE
+================================================================================
+Lucene Index Build/Update Summary:
+================================================================================
+Shard  0: added=   223  updated=     0
+Shard  3: added=   217  updated=     0
+================================================================================
+Index Statistics:
+  Total shards: 4
+  Total documents added: 440
+  Total documents updated: 0
+================================================================================
+✅ STEP 4 COMPLETE: Lucene index updated successfully
+================================================================================
+PIPELINE RUN COMPLETED SUCCESSFULLY
+================================================================================
+```
+
+**What to look for:**
+- **Join stats:** Chunks with valid embeddings
+- **Insert vs Update:** New chunks vs modified chunks
+- **Shard distribution:** How chunks distributed across shards
+- **Per-shard metrics:** Added/updated counts per shard
+- **Total statistics:** Overall index operations
+- **Completion status:** Success/failure indicator
+
+---
+
+### 🎯 Key Metrics to Monitor
+
+| Metric | Where to Find | What It Means |
+|--------|---------------|---------------|
+| **Processing Time** | Start/end timestamps | Pipeline performance |
+| **Success Rate** | "X successful, Y failed" | Data quality issues |
+| **Incremental Efficiency** | "Found X needing..." | How much skipped |
+| **Batch Performance** | Embedding generation | Ollama service health |
+| **Shard Distribution** | Step 4 shard stats | Load balancing |
+| **Net Changes** | Delta before/after | Actual data changes |
+
+---
+
+### 🚨 Troubleshooting with Logs
+
+**Problem:** Slow embedding generation
+```
+Look for: "Generating embeddings in X batches"
+Action: Reduce batchSize if too slow, increase if batches are fast
+```
+
+**Problem:** High failure rate
+```
+Look for: "PDF extraction: X successful, Y failed"
+Action: Check failed PDF paths, verify file accessibility
+```
+
+**Problem:** Unexpected re-processing
+```
+Look for: "Found X needing..." when expecting 0
+Action: Verify content hasn't changed, check hash calculations
+```
+
+**Problem:** Uneven shard distribution
+```
+Look for: Shard distribution stats in Step 4
+Action: Consider adjusting numShards or reviewing docId distribution
+```
+
+---
+
+### 💡 Pro Tips
+
+1. **Track duration:** Subtract start time from end time for each step
+2. **Monitor trends:** Compare "added" counts across runs
+3. **Verify incremental:** Ensure "NO CHUNKS NEED..." appears when no changes
+4. **Check ratios:** Embeddings/chunks should be ~85-90% (some filtering expected)
+5. **Watch for warnings:** ⚠️ symbols indicate potential issues
+
+---
+
+## 🚀 Getting Started
 
 ### Prerequisites
 
-**Software Requirements**:
+**Software:**
 - Scala 2.12+
 - Apache Spark 3.4+
 - Delta Lake 2.4+
 - Apache Lucene 9.x
-- SBT (for building)
+- SBT
 - Java 11+
 
-**For Embedding Generation** (Step 3):
-- Ollama service running locally
-- `mxbai-embed-large` model installed
-- Install: `ollama pull mxbai-embed-large`
+**For Embeddings:**
+- Ollama service
+- Model: `ollama pull mxbai-embed-large`
 
-**For S3/EMR**:
-- AWS credentials configured
-- S3 bucket with appropriate permissions
-- EMR cluster with Spark
+**For EMR:**
+- AWS credentials
+- S3 bucket with permissions
+- EMR cluster
 
 ### Local Mode
 
-**1. Build the project**:
+#### 1. Build the project
+
 ```bash
 sbt clean compile assembly
 ```
 
-**2. Prepare input file**:
-Create `pdfs.txt` with one PDF path per line:
+#### 2. Prepare input file
+
+Create `pdfs.txt`:
 ```
 /path/to/document1.pdf
 /path/to/document2.pdf
-s3://bucket/path/to/document3.pdf
+s3://bucket/document3.pdf
 ```
 
-**3. Start Ollama** (for embedding generation):
+#### 3. Start Ollama
+
 ```bash
 ollama serve
 ```
 
-**4. Run the full pipeline**:
+#### 4. Run pipeline
 
-**Option A: Run all steps in sequence**:
+**Full pipeline (chained):**
 ```bash
-# Step 1: Document Normalization
 spark-submit \
   --class com.rag.RAGDocNormalized \
   --master local[*] \
   target/scala-2.12/rag-assembly-1.0.jar \
   pdfs.txt
-
-# Pipeline automatically chains to steps 2, 3, and 4
 ```
 
-**Option B: Run individual steps**:
-
+**Individual steps:**
 ```bash
-# Step 1: Document Normalization
-spark-submit \
-  --class com.rag.RAGDocNormalized \
-  --master local[*] \
-  target/scala-2.12/rag-assembly-1.0.jar \
-  pdfs.txt
+# Step 1
+spark-submit --class com.rag.RAGDocNormalized --master local[*] target/scala-2.12/rag-assembly-1.0.jar pdfs.txt
 
-# Step 2: Chunking
-spark-submit \
-  --class com.rag.RAGChunks \
-  --master local[*] \
-  target/scala-2.12/rag-assembly-1.0.jar
+# Step 2
+spark-submit --class com.rag.RAGChunks --master local[*] target/scala-2.12/rag-assembly-1.0.jar
 
-# Step 3: Embeddings
-spark-submit \
-  --class com.rag.RAGEmbeddings \
-  --master local[*] \
-  target/scala-2.12/rag-assembly-1.0.jar
+# Step 3
+spark-submit --class com.rag.RAGEmbeddings --master local[*] target/scala-2.12/rag-assembly-1.0.jar
 
-# Step 4: Indexing
-spark-submit \
-  --class com.rag.RagLuceneIndex \
-  --master local[*] \
-  target/scala-2.12/rag-assembly-1.0.jar
+# Step 4
+spark-submit --class com.rag.RagLuceneIndex --master local[*] target/scala-2.12/rag-assembly-1.0.jar
 ```
 
-**5. Check logs**:
+#### 5. Monitor logs
+
 ```bash
 tail -f /Users/moudgil/output/logs/rag_audit.log
 ```
 
+---
+
 ### EMR Mode
 
-**1. Upload JAR and input to S3**:
-```bash
-# Upload JAR
-aws s3 cp target/scala-2.12/rag-assembly-1.0.jar \
-  s3://your-bucket/jars/
+#### 1. Upload to S3
 
-# Upload PDF list
+```bash
+# JAR
+aws s3 cp target/scala-2.12/rag-assembly-1.0.jar s3://your-bucket/jars/
+
+# Input
 aws s3 cp pdfs.txt s3://your-bucket/input/
 ```
 
-**2. Run on EMR**:
+#### 2. Run on EMR
 
-**Option A: Full pipeline with pre-computed embeddings**:
+**Document Normalization:**
 ```bash
-# Pre-compute embeddings locally (on machine with Ollama)
-export RUN_FULL_PIPELINE=false
-spark-submit \
-  --class com.rag.RAGDocNormalized \
-  --master local[*] \
-  target/scala-2.12/rag-assembly-1.0.jar \
-  pdfs.txt
-
-# Steps 1 and 2 run locally, step 3 generates embeddings
-# Then upload Delta tables to S3
-
-# Run indexing on EMR with skip embedding
 aws emr add-steps \
   --cluster-id j-XXXXXXXXXXXXX \
-  --steps Type=Spark,Name="RAG Index",\
-ActionOnFailure=CONTINUE,\
-Args=[--class,com.rag.RagLuceneIndex,\
---master,yarn,\
---deploy-mode,cluster,\
---conf,spark.hadoop.fs.s3a.impl=org.apache.hadoop.fs.s3a.S3AFileSystem,\
---conf,spark.hadoop.fs.s3a.aws.credentials.provider=com.amazonaws.auth.DefaultAWSCredentialsProviderChain,\
+  --steps Type=Spark,Name="RAG Doc Normalize",ActionOnFailure=CONTINUE,\
+Args=[--class,com.rag.RAGDocNormalized,--master,yarn,--deploy-mode,cluster,\
+s3://your-bucket/jars/rag-assembly-1.0.jar,s3://your-bucket/input/pdfs.txt]
+```
+
+**Chunking:**
+```bash
+aws emr add-steps \
+  --cluster-id j-XXXXXXXXXXXXX \
+  --steps Type=Spark,Name="RAG Chunks",ActionOnFailure=CONTINUE,\
+Args=[--class,com.rag.RAGChunks,--master,yarn,--deploy-mode,cluster,\
 s3://your-bucket/jars/rag-assembly-1.0.jar]
 ```
 
-**Option B: Individual steps on EMR**:
-
+**Indexing** (with skip embedding):
 ```bash
-# Step 1: Document Normalization
 aws emr add-steps \
   --cluster-id j-XXXXXXXXXXXXX \
-  --steps Type=Spark,Name="RAG Doc Normalize",\
-ActionOnFailure=CONTINUE,\
-Args=[--class,com.rag.RAGDocNormalized,\
---master,yarn,\
---deploy-mode,cluster,\
-s3://your-bucket/jars/rag-assembly-1.0.jar,\
-s3://your-bucket/input/pdfs.txt]
-
-# Step 2: Chunking
-aws emr add-steps \
-  --cluster-id j-XXXXXXXXXXXXX \
-  --steps Type=Spark,Name="RAG Chunks",\
-ActionOnFailure=CONTINUE,\
-Args=[--class,com.rag.RAGChunks,\
---master,yarn,\
---deploy-mode,cluster,\
-s3://your-bucket/jars/rag-assembly-1.0.jar]
-
-# Step 3: Embeddings (skip on EMR)
-export SKIP_EMBEDDING=true
-
-# Step 4: Indexing
-aws emr add-steps \
-  --cluster-id j-XXXXXXXXXXXXX \
-  --steps Type=Spark,Name="RAG Index",\
-ActionOnFailure=CONTINUE,\
-Args=[--class,com.rag.RagLuceneIndex,\
---master,yarn,\
---deploy-mode,cluster,\
+  --steps Type=Spark,Name="RAG Index",ActionOnFailure=CONTINUE,\
+Args=[--class,com.rag.RagLuceneIndex,--master,yarn,--deploy-mode,cluster,\
 s3://your-bucket/jars/rag-assembly-1.0.jar]
 ```
 
-**3. Monitor logs**:
+#### 3. Monitor
+
 ```bash
-# View EMR logs
+# List logs
 aws s3 ls s3://your-bucket/rag/logs/audit/ --recursive
 
-# Download and view
-aws s3 cp s3://your-bucket/rag/logs/audit/RagLuceneIndex_20250101_101251.log - | less
+# View log
+aws s3 cp s3://your-bucket/rag/logs/audit/[filename].log - | less
 ```
 
 ---
 
-## Configuration
+## ⚙️ Configuration
 
-Configuration is centralized in the `Config` object. Key settings:
+Configuration is centralized in `Config` object:
 
 ```scala
 object Config {
-  // Environment detection
-  val isEMR: Boolean = sys.env.get("EMR_MODE").contains("true")
+  val isEMR = sys.env.get("EMR_MODE").contains("true")
   
-  // Paths (automatically switch between local and S3)
   val basePath = if (isEMR) "s3://your-bucket/rag" else "/Users/moudgil/output"
   val docNormalizedPath = s"$basePath/delta/doc_normalized"
   val chunksPath = s"$basePath/delta/chunks"
   val embeddingsPath = s"$basePath/delta/embeddings"
   val indexPath = s"$basePath/lucene_index"
-  val indexedMetadataPath = s"$basePath/delta/indexed_chunks"
-  val logsPath = s"$basePath/logs"
   
-  // Embedding configuration
   val embedModel = "mxbai-embed-large"
   val embedVer = "v1"
   val batchSize = 50
-  
-  // Indexing configuration
   val numShards = 4
 }
 ```
 
-**Environment Variables**:
-- `EMR_MODE=true`: Enable EMR mode (S3 paths)
-- `RUN_FULL_PIPELINE=true`: Chain all steps automatically
-- `SKIP_EMBEDDING=true`: Skip embedding generation (use pre-computed)
-- `RAG_SIMILARITY=COSINE|EUCLIDEAN|DOT_PRODUCT`: Vector similarity function
+### Environment Variables
+
+| Variable | Values | Purpose |
+|----------|--------|---------|
+| `EMR_MODE` | true/false | Enable EMR mode (S3 paths) |
+| `RUN_FULL_PIPELINE` | true/false | Chain all steps automatically |
+| `SKIP_EMBEDDING` | true/false | Skip embedding generation |
+| `RAG_SIMILARITY` | COSINE/EUCLIDEAN/DOT_PRODUCT | Vector similarity function |
 
 ---
 
-## Incremental Updates
+## 🔄 Incremental Updates
 
-The pipeline is designed for **incremental processing** - only new or modified content is processed at each stage.
+The pipeline processes **only new or modified content** at each stage.
 
 ### How It Works
 
-1. **Content-based hashing**:
-   - Documents: `contentHash = SHA-256(text)`
-   - Chunks: `chunkHash = SHA-256(chunk)`
-   
-2. **Change detection**:
-   - Compare hashes with existing Delta tables
-   - Left anti join identifies new/modified content
-   
-3. **Granular updates**:
-   - Document level: Only changed documents re-chunked
-   - Chunk level: Only changed chunks re-embedded
-   - Index level: Only changed chunks re-indexed
+1. **Content hashing:** SHA-256 of text/chunks
+2. **Change detection:** Compare with existing Delta tables
+3. **Granular updates:** Document, chunk, and index level
 
 ### Example Scenarios
 
-**Scenario 1: New PDF added**:
-- Step 1: Detects new docId → extracts text
-- Step 2: All chunks are new → creates chunks
-- Step 3: All chunks need embeddings → generates embeddings
-- Step 4: All chunks need indexing → adds to index
-
-**Scenario 2: Existing PDF content changed**:
-- Step 1: Same docId, different contentHash → extracts new text
-- Step 2: Most chunks changed → re-chunks document
-- Step 3: Changed chunks need new embeddings → generates embeddings
-- Step 4: Changed chunks need re-indexing → updates index
-
-**Scenario 3: No changes**:
-- Step 1: All (docId, contentHash) pairs exist → skips
-- Step 2: All (docId, docHash) pairs exist → skips
-- Step 3: All (chunkId, chunkHash) pairs exist → skips
-- Step 4: All (chunkId, chunkHash) pairs exist → skips
-- Pipeline completes in seconds!
+| Scenario | Step 1 | Step 2 | Step 3 | Step 4 |
+|----------|--------|--------|--------|--------|
+| **New PDF** | Extract | Chunk all | Embed all | Index all |
+| **Content changed** | Extract | Re-chunk | Re-embed changed | Re-index changed |
+| **No changes** | Skip | Skip | Skip | Skip ✨ |
 
 ### Benefits
 
-- **Efficiency**: Process only what changed
-- **Cost savings**: Especially important for expensive embedding generation
-- **Fast iterations**: Re-run pipeline frequently without waste
-- **Idempotent**: Safe to re-run pipeline multiple times
+- ✅ **Efficiency:** Process only what changed
+- ✅ **Cost savings:** Important for expensive embeddings
+- ✅ **Fast iterations:** Re-run pipeline frequently
+- ✅ **Idempotent:** Safe to run multiple times
 
 ---
 
-## Project Structure
+## 📁 Project Structure
 
 ```
 rag-pipeline/
 ├── src/main/scala/com/rag/
-│   ├── RAGDocNormalized.scala    # Step 1: PDF extraction & normalization
-│   ├── RAGChunks.scala           # Step 2: Document chunking
-│   ├── RAGEmbeddings.scala       # Step 3: Embedding generation
-│   ├── RagLuceneIndex.scala      # Step 4: Lucene index building
-│   ├── AuditLogger.scala         # Logging infrastructure
-│   ├── Config.scala              # Configuration management
-│   ├── Chunker.scala             # Text chunking logic
-│   ├── Vectors.scala             # Vector operations (L2 norm)
-│   └── Ollama.scala              # Ollama API client
-├── build.sbt                     # SBT build configuration
-├── README.md                     # This file
-└── pdfs.txt                      # Input file (PDF paths)
+│   ├── RAGDocNormalized.scala    # Step 1: PDF extraction
+│   ├── RAGChunks.scala           # Step 2: Chunking
+│   ├── RAGEmbeddings.scala       # Step 3: Embeddings
+│   ├── RagLuceneIndex.scala      # Step 4: Indexing
+│   ├── AuditLogger.scala         # Logging
+│   ├── Config.scala              # Configuration
+│   ├── Chunker.scala             # Chunking logic
+│   ├── Vectors.scala             # Vector operations
+│   └── Ollama.scala              # Ollama client
+├── build.sbt
+├── README.md
+└── pdfs.txt
 ```
 
 ---
 
-## Technology Stack
-
-### Core Technologies
-
-- **Scala 2.12**: Functional programming language
-- **Apache Spark 3.4**: Distributed data processing
-- **Delta Lake 2.4**: ACID transactions, time travel
-- **Apache Lucene 9.x**: Full-text and vector search
-- **Apache PDFBox**: PDF text extraction
-
-### Libraries
-
-- **Ollama**: Local LLM and embedding service
-- **SBT**: Build tool
-- **Hadoop AWS**: S3 integration
-
-### Infrastructure
-
-- **Local Development**: Spark standalone
-- **Production**: AWS EMR (Elastic MapReduce)
-- **Storage**: S3 for data, logs, and indexes
-
----
-
-## Performance Considerations
+## ⚡ Performance
 
 ### Optimization Tips
 
-1. **Batch Size** (Embeddings):
-   - Smaller (10-20): Lower memory, slower
-   - Larger (50-100): Higher memory, faster
-   - Adjust based on available RAM
+**Batch Size (Embeddings):**
+- Small (10-20): Lower memory, slower
+- Large (50-100): Higher memory, faster
 
-2. **Number of Shards** (Indexing):
-   - More shards = more parallelism
-   - Recommended: 1 shard per 10-50GB of data
-   - Must be set before initial index build
+**Number of Shards (Indexing):**
+- More shards = more parallelism
+- Recommended: 1 shard per 10-50GB
 
-3. **Spark Partitions**:
-   - PDF extraction: 10 partitions (I/O bound)
-   - Chunking: Default (CPU bound)
-   - Embeddings: 1 partition (sequential batches)
-   - Indexing: numShards partitions (parallel)
+**Spark Partitions:**
+- PDF extraction: 10 (I/O bound)
+- Chunking: Default (CPU bound)
+- Embeddings: 1 (sequential)
+- Indexing: numShards (parallel)
 
-4. **Delta Lake Optimization**:
-   ```scala
-   // Periodically optimize Delta tables
-   spark.sql("OPTIMIZE rag.chunks")
-   spark.sql("OPTIMIZE rag.embeddings")
-   ```
+### Delta Lake Optimization
 
-### Monitoring
-
-Check these metrics in audit logs:
-- Documents per second (extraction)
-- Chunks per second (chunking)
-- Embeddings per second (embedding)
-- Documents per shard (indexing)
-
----
-
-## Troubleshooting
-
-### Common Issues
-
-**1. Out of Memory (Embeddings)**:
-```
-Solution: Reduce batchSize in Config
-```
-
-**2. Ollama Connection Failed**:
-```
-Check: Is Ollama service running?
-Command: ollama serve
-```
-
-**3. S3 Access Denied (EMR)**:
-```
-Check: EMR instance role has S3 permissions
-Check: Bucket policy allows access
-```
-
-**4. Delta Table Not Found**:
-```
-First run? Expected - tables created automatically
-Verify: Config paths are correct
-```
-
-**5. Lucene Index Corruption**:
-```
-Delete index directory and rebuild:
-rm -rf /output/lucene_index/*
-Re-run Step 4
+```scala
+spark.sql("OPTIMIZE rag.chunks")
+spark.sql("OPTIMIZE rag.embeddings")
 ```
 
 ---
 
-## Next Steps
+## 🔧 Troubleshooting
 
-After running the pipeline, you can:
-
-1. **Query the Index**: Use Lucene's search API to query vectors
-2. **Build RAG Application**: Integrate with LLM for Q&A
-3. **Add More Documents**: Re-run with updated pdfs.txt
-4. **Tune Performance**: Adjust batch sizes, shards based on logs
-5. **Monitor Metrics**: Track processing times, success rates
+| Issue | Solution |
+|-------|----------|
+| **Out of Memory** | Reduce `batchSize` in Config |
+| **Ollama Connection Failed** | Check if service running: `ollama serve` |
+| **S3 Access Denied** | Verify EMR role has S3 permissions |
+| **Delta Table Not Found** | First run - tables created automatically |
+| **Index Corruption** | Delete index dir and rebuild |
 
 ---
 
-## License
+## 🛠 Technology Stack
 
-[Specify your license here]
+| Category | Technology |
+|----------|------------|
+| **Language** | Scala 2.12 |
+| **Processing** | Apache Spark 3.4 |
+| **Storage** | Delta Lake 2.4 |
+| **Search** | Apache Lucene 9.x |
+| **Embeddings** | Ollama (mxbai-embed-large) |
+| **Infrastructure** | AWS EMR, S3 |
 
-## Contributors
+---
+
+## 📚 Next Steps
+
+After running the pipeline:
+
+1. ✅ Query the index using Lucene API
+2. ✅ Build RAG application with LLM
+3. ✅ Add more documents (update pdfs.txt)
+4. ✅ Tune performance (batch sizes, shards)
+5. ✅ Monitor metrics in audit logs
+
+---
+
+## 📄 License
+
+[Specify your license]
+
+## 👥 Contributors
 
 [List contributors]
 
-## Support
+---
+
+## 💬 Support
 
 For issues or questions:
-- Check audit logs first
-- Review error messages in pipeline logs
-- Verify configuration in Config.scala
+1. Check audit logs
+2. Review error messages
+3. Verify Config.scala
 
 ---
 
 **Happy RAG Building! 🚀**
+
+Made with ❤️ using Scala + Spark + Delta Lake + Lucene
