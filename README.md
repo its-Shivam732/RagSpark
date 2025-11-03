@@ -675,7 +675,7 @@ spark.sql("OPTIMIZE rag.embeddings")
 
 | Category | Technology |
 |----------|------------|
-| **Language** | Scala 2.12 |
+| **Language** | Scala 2.12.18 |
 | **Processing** | Apache Spark 3.5.3 |
 | **Embeddings** | Ollama (mxbai-embed-large) |
 | **Infrastructure** | AWS EMR, S3 |
