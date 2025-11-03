@@ -3,7 +3,7 @@
 # Youtube video-- https://www.youtube.com/watch?v=HLwyP9LjCLk
 
 A complete **Retrieval-Augmented Generation (RAG)** pipeline built with Scala, Apache Spark, Delta Lake, and Lucene. Process PDF documents, generate embeddings, and build searchable vector indexes for efficient semantic search and retrieval.
-The result metrics are implemented using an audit log approach. To view details, refer directly to the - Results/Audit Logs section from table of contents , **Alternatively**, you can navigate through the Table of Contents in sequence to understand the complete architectural flow I followed. Toward the end, you’ll reach the Results section — this approach helps you fully grasp how the results were generated.
+The result metrics are implemented using an audit log approach. To view details, refer directly to the - Results/Audit Logs section from table of contents , **Alternatively**, you can navigate through the Table of Contents in sequence.
 
 ---
 
