@@ -1,4 +1,0 @@
-[0m[[0m[33mwarn[0m] [0m[0m/Users/moudgil/RagSpark/RagSpark/src/main/scala/com/rag/Ollama.scala:118:20: The outer reference in this type test cannot be checked at run time.[0m
-[0m[[0m[33mwarn[0m] [0m[0m  final case class ChatMessage(role: String, content: String)[0m
-[0m[[0m[33mwarn[0m] [0m[0m                   ^[0m
-[0m[[0m[33mwarn[0m] [0m[0mone warning found[0m
