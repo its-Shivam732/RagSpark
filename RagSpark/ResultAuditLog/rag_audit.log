@@ -1,0 +1,387 @@
+2025-11-02 15:55:27 | ================================================================================
+2025-11-02 15:55:27 | 🚀 NEW PIPELINE RUN STARTING AT: 2025-11-02T15:55:27.440039
+2025-11-02 15:55:27 | ================================================================================
+2025-11-02 15:55:27 | STEP 1: Document Normalization
+2025-11-02 15:55:27 | --------------------------------------------------------------------------------
+2025-11-02 15:55:29 | Total PDFs in input list: 7
+2025-11-02 15:55:30 | No existing Delta table found - this is the first run
+2025-11-02 15:55:30 | PDF extraction: 7 successful, 0 failed
+2025-11-02 15:55:30 | All documents are NEW (first run)
+2025-11-02 15:55:31 | Creating new Delta table with 7 documents
+2025-11-02 15:55:33 | ✅ STEP 1 COMPLETE
+2025-11-02 15:55:34 | Final document count in Delta table: 7
+2025-11-02 15:55:34 | --------------------------------------------------------------------------------
+2025-11-02 15:55:34 | STEP 2: Document Chunking
+2025-11-02 15:55:34 | Loaded 7 documents from rag.doc_normalized
+2025-11-02 15:55:34 | No existing chunks table - this is the first run
+2025-11-02 15:55:34 | All documents need chunking (first run)
+2025-11-02 15:55:34 | Generated 1604 chunks from 7 documents
+2025-11-02 15:55:34 | Chunks to upsert: 1604 (new or content changed)
+2025-11-02 15:55:34 | Creating new chunks table with 1604 chunks
+2025-11-02 15:55:35 | ✅ STEP 2 COMPLETE: rag.chunks updated
+2025-11-02 15:55:35 | Final chunk count in Delta table: 1604
+2025-11-02 15:55:35 | --------------------------------------------------------------------------------
+2025-11-02 15:55:35 | STEP 3: Embedding Generation
+2025-11-02 15:55:35 | Running on: Local
+2025-11-02 15:55:35 | Loaded 1604 chunks from rag.chunks
+2025-11-02 15:55:35 | Using embedding model: mxbai-embed-large v1.3.0
+2025-11-02 15:55:35 | No existing embeddings table - will embed all chunks
+2025-11-02 15:55:36 | Found 1604 chunks needing embeddings (new or content changed)
+2025-11-02 15:55:36 | Generating embeddings in 51 batches (batch size: 32)
+2025-11-02 15:56:12 | Embedding results: 1604 successful, 0 failed
+2025-11-02 15:56:12 | Creating new embeddings table with 1604 embeddings
+2025-11-02 15:56:14 | Final embedding count in Delta table: 1604
+2025-11-02 15:56:14 | ✅ STEP 3 COMPLETE: rag.embeddings updated
+2025-11-02 15:56:14 | --------------------------------------------------------------------------------
+2025-11-02 15:56:14 | STEP 4: Lucene Index Building
+2025-11-02 15:56:14 | Loading chunks and embeddings from Delta tables
+2025-11-02 15:56:14 | Loaded 1604 chunks from rag.chunks
+2025-11-02 15:56:14 | Loaded 1604 embeddings from rag.embeddings
+2025-11-02 15:56:14 | Joining chunks with embeddings
+2025-11-02 15:56:14 | After join: 1370 chunks with valid embeddings
+2025-11-02 15:56:14 | Determining chunks needing indexing
+2025-11-02 15:56:14 | No existing indexed_chunks metadata - will index all chunks
+2025-11-02 15:56:15 | Total chunks to index: 1370
+2025-11-02 15:56:15 | Partitioning data into 4 shards (keeping documents together)
+2025-11-02 15:56:15 | Shard distribution:
+2025-11-02 15:56:15 |   Shard  0:    457 chunks from 2 documents
+2025-11-02 15:56:15 |   Shard  1:      2 chunks from 1 documents
+2025-11-02 15:56:15 |   Shard  2:    225 chunks from 1 documents
+2025-11-02 15:56:15 |   Shard  3:    686 chunks from 3 documents
+2025-11-02 15:56:15 | Using vector similarity function: COSINE
+2025-11-02 15:56:15 | Building/updating Lucene indexes in parallel...
+2025-11-02 15:56:16 | Updating indexed chunks metadata table
+2025-11-02 15:56:16 | Creating new metadata table with 1370 chunks
+2025-11-02 15:56:16 | ================================================================================
+2025-11-02 15:56:16 | Lucene Index Build/Update Summary:
+2025-11-02 15:56:16 | ================================================================================
+2025-11-02 15:56:16 | Shard  0: added=   225  updated=     0
+2025-11-02 15:56:16 | Shard  1: added=   459  updated=     0
+2025-11-02 15:56:16 | Shard  2: added=     0  updated=     0
+2025-11-02 15:56:16 | Shard  3: added=   686  updated=     0
+2025-11-02 15:56:16 | ================================================================================
+2025-11-02 15:56:16 | Index Statistics:
+2025-11-02 15:56:16 |   Total shards: 4
+2025-11-02 15:56:16 |   Total documents added: 1370
+2025-11-02 15:56:16 |   Total documents updated: 0
+2025-11-02 15:56:16 | ================================================================================
+2025-11-02 15:56:16 | ✅ STEP 4 COMPLETE: Lucene index updated successfully
+2025-11-02 15:56:16 | ================================================================================
+2025-11-02 15:56:16 | PIPELINE RUN COMPLETED SUCCESSFULLY
+2025-11-02 15:56:16 | ================================================================================
+2025-11-02 15:58:54 | ================================================================================
+2025-11-02 15:58:54 | 🚀 NEW PIPELINE RUN STARTING AT: 2025-11-02T15:58:54.556316
+2025-11-02 15:58:54 | ================================================================================
+2025-11-02 15:58:54 | STEP 1: Document Normalization
+2025-11-02 15:58:54 | --------------------------------------------------------------------------------
+2025-11-02 15:58:56 | Total PDFs in input list: 9
+2025-11-02 15:58:59 | Found existing Delta table with 7 documents
+2025-11-02 15:59:00 | PDF extraction: 9 successful, 0 failed
+2025-11-02 15:59:01 | Found 2 NEW or CHANGED documents (out of 9 total)
+2025-11-02 15:59:03 |   - NEW documents: 2
+2025-11-02 15:59:03 |   - CHANGED documents (content updated): 0
+2025-11-02 15:59:04 | Upserting 2 documents into existing Delta table
+2025-11-02 15:59:06 | Delta table before: 7 docs, after: 9 docs
+2025-11-02 15:59:06 | Net change: +2 documents
+2025-11-02 15:59:06 | ✅ STEP 1 COMPLETE
+2025-11-02 15:59:06 | Final document count in Delta table: 9
+2025-11-02 15:59:06 | --------------------------------------------------------------------------------
+2025-11-02 15:59:06 | STEP 2: Document Chunking
+2025-11-02 15:59:06 | Loaded 9 documents from rag.doc_normalized
+2025-11-02 15:59:07 | Found existing chunks table with 7 unique documents
+2025-11-02 15:59:07 | Found 2 documents needing chunking (new or content changed)
+2025-11-02 15:59:08 | Generated 440 chunks from 2 documents
+2025-11-02 15:59:08 | Chunks to upsert: 440 (new or content changed)
+2025-11-02 15:59:08 | Updating existing chunks table (before: 1604 chunks)
+2025-11-02 15:59:10 | Chunks table updated (after: 2044 chunks, added: 440)
+2025-11-02 15:59:10 | ✅ STEP 2 COMPLETE: rag.chunks updated
+2025-11-02 15:59:10 | Final chunk count in Delta table: 2044
+2025-11-02 15:59:10 | --------------------------------------------------------------------------------
+2025-11-02 15:59:10 | STEP 3: Embedding Generation
+2025-11-02 15:59:10 | Running on: Local
+2025-11-02 15:59:10 | Loaded 2044 chunks from rag.chunks
+2025-11-02 15:59:10 | Using embedding model: mxbai-embed-large v1.3.0
+2025-11-02 15:59:10 | Found existing embeddings table with 1604 chunks
+2025-11-02 15:59:11 | Found 440 chunks needing embeddings (new or content changed)
+2025-11-02 15:59:12 | Generating embeddings in 14 batches (batch size: 32)
+2025-11-02 15:59:23 | Embedding results: 440 successful, 0 failed
+2025-11-02 15:59:23 | Updating existing embeddings table (before: 1604 embeddings)
+2025-11-02 15:59:25 | Embeddings table updated (after: 2044, added: 440)
+2025-11-02 15:59:25 | Final embedding count in Delta table: 2044
+2025-11-02 15:59:25 | ✅ STEP 3 COMPLETE: rag.embeddings updated
+2025-11-02 15:59:25 | --------------------------------------------------------------------------------
+2025-11-02 15:59:25 | STEP 4: Lucene Index Building
+2025-11-02 15:59:25 | Loading chunks and embeddings from Delta tables
+2025-11-02 15:59:25 | Loaded 2044 chunks from rag.chunks
+2025-11-02 15:59:25 | Loaded 2044 embeddings from rag.embeddings
+2025-11-02 15:59:25 | Joining chunks with embeddings
+2025-11-02 15:59:25 | After join: 1810 chunks with valid embeddings
+2025-11-02 15:59:25 | Determining chunks needing indexing
+2025-11-02 15:59:25 | Found existing indexed_chunks metadata table
+2025-11-02 15:59:26 | Already indexed: 1370 chunks
+2025-11-02 15:59:26 | Found 440 chunks needing indexing (new or content changed)
+2025-11-02 15:59:28 |   - INSERTS (new chunks): 440
+2025-11-02 15:59:28 |   - UPDATES (content changed): 0
+2025-11-02 15:59:29 | Total chunks to index: 440
+2025-11-02 15:59:29 | Partitioning data into 4 shards (keeping documents together)
+2025-11-02 15:59:29 | Shard distribution:
+2025-11-02 15:59:30 |   Shard  2:    223 chunks from 1 documents
+2025-11-02 15:59:30 |   Shard  3:    217 chunks from 1 documents
+2025-11-02 15:59:30 | Using vector similarity function: COSINE
+2025-11-02 15:59:30 | Building/updating Lucene indexes in parallel...
+2025-11-02 15:59:31 | Updating indexed chunks metadata table
+2025-11-02 15:59:31 | Updating metadata table (before: 1370 chunks)
+2025-11-02 15:59:33 | Metadata table updated (after: 1810 chunks)
+2025-11-02 15:59:33 | ================================================================================
+2025-11-02 15:59:33 | Lucene Index Build/Update Summary:
+2025-11-02 15:59:33 | ================================================================================
+2025-11-02 15:59:33 | Shard  0: added=   223  updated=     0
+2025-11-02 15:59:33 | Shard  1: added=     0  updated=     0
+2025-11-02 15:59:33 | Shard  2: added=     0  updated=     0
+2025-11-02 15:59:33 | Shard  3: added=   217  updated=     0
+2025-11-02 15:59:33 | ================================================================================
+2025-11-02 15:59:33 | Index Statistics:
+2025-11-02 15:59:33 |   Total shards: 4
+2025-11-02 15:59:33 |   Total documents added: 440
+2025-11-02 15:59:33 |   Total documents updated: 0
+2025-11-02 15:59:33 | ================================================================================
+2025-11-02 15:59:33 | ✅ STEP 4 COMPLETE: Lucene index updated successfully
+2025-11-02 15:59:33 | ================================================================================
+2025-11-02 15:59:33 | PIPELINE RUN COMPLETED SUCCESSFULLY
+2025-11-02 15:59:33 | ================================================================================
+2025-11-02 16:01:38 | ================================================================================
+2025-11-02 16:01:38 | 🚀 NEW PIPELINE RUN STARTING AT: 2025-11-02T16:01:38.094456
+2025-11-02 16:01:38 | ================================================================================
+2025-11-02 16:01:38 | STEP 1: Document Normalization
+2025-11-02 16:01:38 | --------------------------------------------------------------------------------
+2025-11-02 16:01:40 | Total PDFs in input list: 9
+2025-11-02 16:01:43 | Found existing Delta table with 9 documents
+2025-11-02 16:01:44 | PDF extraction: 9 successful, 0 failed
+2025-11-02 16:01:45 | Found 1 NEW or CHANGED documents (out of 9 total)
+2025-11-02 16:01:46 |   - NEW documents: 0
+2025-11-02 16:01:46 |   - CHANGED documents (content updated): 1
+2025-11-02 16:01:47 |   CHANGED: file:///Users/moudgil/RagSpark/RagSpark/MSR.2007.19.pdf
+2025-11-02 16:01:48 | Upserting 1 documents into existing Delta table
+2025-11-02 16:01:50 | Delta table before: 9 docs, after: 9 docs
+2025-11-02 16:01:50 | Net change: +0 documents
+2025-11-02 16:01:50 | ✅ STEP 1 COMPLETE
+2025-11-02 16:01:50 | Final document count in Delta table: 9
+2025-11-02 16:01:50 | --------------------------------------------------------------------------------
+2025-11-02 16:01:50 | STEP 2: Document Chunking
+2025-11-02 16:01:50 | Loaded 9 documents from rag.doc_normalized
+2025-11-02 16:01:50 | Found existing chunks table with 9 unique documents
+2025-11-02 16:01:51 | Found 1 documents needing chunking (new or content changed)
+2025-11-02 16:01:52 | Generated 217 chunks from 1 documents
+2025-11-02 16:01:53 | Chunks to upsert: 1 (new or content changed)
+2025-11-02 16:01:53 | Updating existing chunks table (before: 2044 chunks)
+2025-11-02 16:01:54 | Chunks table updated (after: 2044 chunks, added: 0)
+2025-11-02 16:01:54 | ✅ STEP 2 COMPLETE: rag.chunks updated
+2025-11-02 16:01:54 | Final chunk count in Delta table: 2044
+2025-11-02 16:01:54 | --------------------------------------------------------------------------------
+2025-11-02 16:01:54 | STEP 3: Embedding Generation
+2025-11-02 16:01:54 | Running on: Local
+2025-11-02 16:01:54 | Loaded 2044 chunks from rag.chunks
+2025-11-02 16:01:54 | Using embedding model: mxbai-embed-large v1.3.0
+2025-11-02 16:01:55 | Found existing embeddings table with 2044 chunks
+2025-11-02 16:01:56 | Found 1 chunks needing embeddings (new or content changed)
+2025-11-02 16:01:56 | Generating embeddings in 1 batches (batch size: 32)
+2025-11-02 16:01:56 | Embedding results: 1 successful, 0 failed
+2025-11-02 16:01:56 | Updating existing embeddings table (before: 2044 embeddings)
+2025-11-02 16:01:57 | Embeddings table updated (after: 2044, added: 0)
+2025-11-02 16:01:58 | Final embedding count in Delta table: 2044
+2025-11-02 16:01:58 | ✅ STEP 3 COMPLETE: rag.embeddings updated
+2025-11-02 16:01:58 | --------------------------------------------------------------------------------
+2025-11-02 16:01:58 | STEP 4: Lucene Index Building
+2025-11-02 16:01:58 | Loading chunks and embeddings from Delta tables
+2025-11-02 16:01:58 | Loaded 2044 chunks from rag.chunks
+2025-11-02 16:01:58 | Loaded 2044 embeddings from rag.embeddings
+2025-11-02 16:01:58 | Joining chunks with embeddings
+2025-11-02 16:01:58 | After join: 1810 chunks with valid embeddings
+2025-11-02 16:01:58 | Determining chunks needing indexing
+2025-11-02 16:01:58 | Found existing indexed_chunks metadata table
+2025-11-02 16:01:59 | Already indexed: 1810 chunks
+2025-11-02 16:01:59 | Found 1 chunks needing indexing (new or content changed)
+2025-11-02 16:02:01 |   - INSERTS (new chunks): 0
+2025-11-02 16:02:01 |   - UPDATES (content changed): 1
+2025-11-02 16:02:02 | Total chunks to index: 1
+2025-11-02 16:02:02 | Partitioning data into 4 shards (keeping documents together)
+2025-11-02 16:02:02 | Shard distribution:
+2025-11-02 16:02:03 |   Shard  3:      1 chunks from 1 documents
+2025-11-02 16:02:03 | Using vector similarity function: COSINE
+2025-11-02 16:02:03 | Building/updating Lucene indexes in parallel...
+2025-11-02 16:02:04 | Updating indexed chunks metadata table
+2025-11-02 16:02:04 | Updating metadata table (before: 1810 chunks)
+2025-11-02 16:02:06 | Metadata table updated (after: 1810 chunks)
+2025-11-02 16:02:06 | ================================================================================
+2025-11-02 16:02:06 | Lucene Index Build/Update Summary:
+2025-11-02 16:02:06 | ================================================================================
+2025-11-02 16:02:06 | Shard  0: added=     0  updated=     0
+2025-11-02 16:02:06 | Shard  1: added=     0  updated=     0
+2025-11-02 16:02:06 | Shard  2: added=     0  updated=     0
+2025-11-02 16:02:06 | Shard  3: added=     1  updated=     1
+2025-11-02 16:02:06 | ================================================================================
+2025-11-02 16:02:06 | Index Statistics:
+2025-11-02 16:02:06 |   Total shards: 4
+2025-11-02 16:02:06 |   Total documents added: 1
+2025-11-02 16:02:06 |   Total documents updated: 1
+2025-11-02 16:02:06 | ================================================================================
+2025-11-02 16:02:06 | ✅ STEP 4 COMPLETE: Lucene index updated successfully
+2025-11-02 16:02:06 | ================================================================================
+2025-11-02 16:02:06 | PIPELINE RUN COMPLETED SUCCESSFULLY
+2025-11-02 16:02:06 | ================================================================================
+2025-11-02 22:10:06 | STEP 2: Document Chunking
+2025-11-02 22:10:07 | STEP 3: Embedding Generation
+2025-11-02 22:10:07 | Running on: Local
+2025-11-02 22:10:07 | STEP 4: Lucene Index Building
+2025-11-02 22:10:07 | ================================================================================
+2025-11-02 22:10:07 | 🚀 NEW PIPELINE RUN STARTING AT: 2025-11-02T22:10:07.362911
+2025-11-02 22:10:07 | ================================================================================
+2025-11-02 22:10:07 | STEP 1: Document Normalization
+2025-11-02 22:10:07 | --------------------------------------------------------------------------------
+2025-11-02 22:10:11 | STEP 2: Document Chunking
+2025-11-02 22:10:11 | STEP 3: Embedding Generation
+2025-11-02 22:10:11 | Running on: Local
+2025-11-02 22:10:11 | STEP 4: Lucene Index Building
+2025-11-02 22:10:11 | ================================================================================
+2025-11-02 22:10:11 | 🚀 NEW PIPELINE RUN STARTING AT: 2025-11-02T22:10:11.738895
+2025-11-02 22:10:11 | ================================================================================
+2025-11-02 22:10:11 | STEP 1: Document Normalization
+2025-11-02 22:10:11 | --------------------------------------------------------------------------------
+2025-11-02 22:10:15 | STEP 2: Document Chunking
+2025-11-02 22:10:15 | STEP 3: Embedding Generation
+2025-11-02 22:10:15 | Running on: Local
+2025-11-02 22:10:15 | STEP 4: Lucene Index Building
+2025-11-02 22:10:16 | ================================================================================
+2025-11-02 22:10:16 | 🚀 NEW PIPELINE RUN STARTING AT: 2025-11-02T22:10:16.095003
+2025-11-02 22:10:16 | ================================================================================
+2025-11-02 22:10:16 | STEP 1: Document Normalization
+2025-11-02 22:10:16 | --------------------------------------------------------------------------------
+2025-11-02 22:10:19 | STEP 2: Document Chunking
+2025-11-02 22:10:19 | STEP 3: Embedding Generation
+2025-11-02 22:10:19 | Running on: Local
+2025-11-02 22:10:19 | STEP 4: Lucene Index Building
+2025-11-02 22:10:19 | ================================================================================
+2025-11-02 22:10:19 | 🚀 NEW PIPELINE RUN STARTING AT: 2025-11-02T22:10:19.576976
+2025-11-02 22:10:19 | ================================================================================
+2025-11-02 22:10:19 | STEP 1: Document Normalization
+2025-11-02 22:10:19 | --------------------------------------------------------------------------------
+2025-11-02 22:12:44 | STEP 2: Document Chunking
+2025-11-02 22:12:49 | Loaded 9 documents from rag.doc_normalized
+2025-11-02 22:12:51 | Found existing chunks table with 10 unique documents
+2025-11-02 22:12:52 | ✅ NO DOCUMENTS NEED RE-CHUNKING - All chunks are up to date
+2025-11-02 22:12:53 | ✅ STEP 2 COMPLETE: No chunking needed
+2025-11-02 22:12:53 | --------------------------------------------------------------------------------
+2025-11-02 22:12:53 | STEP 3: Embedding Generation
+2025-11-02 22:12:53 | Running on: Local
+2025-11-02 22:12:53 | Loaded 2044 chunks from rag.chunks
+2025-11-02 22:12:53 | Using embedding model: mxbai-embed-large v1.3.0
+2025-11-02 22:12:54 | Found existing embeddings table with 2044 chunks
+2025-11-02 22:12:55 | ✅ NO CHUNKS NEED EMBEDDING - All embeddings are up to date
+2025-11-02 22:12:55 | ✅ STEP 3 COMPLETE: No embedding generation needed
+2025-11-02 22:12:55 | --------------------------------------------------------------------------------
+2025-11-02 22:12:55 | STEP 4: Lucene Index Building
+2025-11-02 22:12:55 | Loading chunks and embeddings from Delta tables
+2025-11-02 22:12:55 | Loaded 2044 chunks from rag.chunks
+2025-11-02 22:12:55 | Loaded 2044 embeddings from rag.embeddings
+2025-11-02 22:12:55 | Joining chunks with embeddings
+2025-11-02 22:12:55 | After join: 1810 chunks with valid embeddings
+2025-11-02 22:12:55 | Determining chunks needing indexing
+2025-11-02 22:12:55 | Found existing indexed_chunks metadata table
+2025-11-02 22:12:56 | Already indexed: 1810 chunks
+2025-11-02 22:12:57 | ✅ NO NEW OR UPDATED CHUNKS TO INDEX - Index is up to date
+2025-11-02 22:12:57 | ✅ STEP 4 COMPLETE: No indexing needed
+2025-11-02 22:12:57 | ================================================================================
+2025-11-02 22:12:57 | PIPELINE RUN COMPLETED SUCCESSFULLY
+2025-11-02 22:12:57 | ================================================================================
+2025-11-02 22:12:57 | STEP 3: Embedding Generation
+2025-11-02 22:12:57 | Running on: Local
+2025-11-02 22:12:58 | Loaded 2044 chunks from rag.chunks
+2025-11-02 22:12:58 | Using embedding model: mxbai-embed-large v1.3.0
+2025-11-02 22:12:59 | Found existing embeddings table with 2044 chunks
+2025-11-02 22:13:00 | ✅ NO CHUNKS NEED EMBEDDING - All embeddings are up to date
+2025-11-02 22:13:00 | ✅ STEP 3 COMPLETE: No embedding generation needed
+2025-11-02 22:13:00 | --------------------------------------------------------------------------------
+2025-11-02 22:13:00 | STEP 4: Lucene Index Building
+2025-11-02 22:13:00 | Loading chunks and embeddings from Delta tables
+2025-11-02 22:13:00 | Loaded 2044 chunks from rag.chunks
+2025-11-02 22:13:00 | Loaded 2044 embeddings from rag.embeddings
+2025-11-02 22:13:00 | Joining chunks with embeddings
+2025-11-02 22:13:00 | After join: 1810 chunks with valid embeddings
+2025-11-02 22:13:00 | Determining chunks needing indexing
+2025-11-02 22:13:00 | Found existing indexed_chunks metadata table
+2025-11-02 22:13:01 | Already indexed: 1810 chunks
+2025-11-02 22:13:02 | ✅ NO NEW OR UPDATED CHUNKS TO INDEX - Index is up to date
+2025-11-02 22:13:02 | ✅ STEP 4 COMPLETE: No indexing needed
+2025-11-02 22:13:02 | ================================================================================
+2025-11-02 22:13:02 | PIPELINE RUN COMPLETED SUCCESSFULLY
+2025-11-02 22:13:02 | ================================================================================
+2025-11-02 22:13:02 | STEP 4: Lucene Index Building
+2025-11-02 22:13:02 | Loading chunks and embeddings from Delta tables
+2025-11-02 22:13:03 | Loaded 2044 chunks from rag.chunks
+2025-11-02 22:13:03 | Loaded 2044 embeddings from rag.embeddings
+2025-11-02 22:13:03 | Joining chunks with embeddings
+2025-11-02 22:13:04 | After join: 1810 chunks with valid embeddings
+2025-11-02 22:13:04 | Determining chunks needing indexing
+2025-11-02 22:13:04 | Found existing indexed_chunks metadata table
+2025-11-02 22:13:05 | Already indexed: 1810 chunks
+2025-11-02 22:13:05 | ✅ NO NEW OR UPDATED CHUNKS TO INDEX - Index is up to date
+2025-11-02 22:13:05 | ✅ STEP 4 COMPLETE: No indexing needed
+2025-11-02 22:13:05 | ================================================================================
+2025-11-02 22:13:05 | PIPELINE RUN COMPLETED SUCCESSFULLY
+2025-11-02 22:13:05 | ================================================================================
+2025-11-02 22:13:06 | ================================================================================
+2025-11-02 22:13:06 | 🚀 NEW PIPELINE RUN STARTING AT: 2025-11-02T22:13:06.036855
+2025-11-02 22:13:06 | ================================================================================
+2025-11-02 22:13:06 | STEP 1: Document Normalization
+2025-11-02 22:13:06 | --------------------------------------------------------------------------------
+2025-11-02 22:13:29 | STEP 2: Document Chunking
+2025-11-02 22:13:35 | Loaded 9 documents from rag.doc_normalized
+2025-11-02 22:13:37 | Found existing chunks table with 10 unique documents
+2025-11-02 22:13:37 | ✅ NO DOCUMENTS NEED RE-CHUNKING - All chunks are up to date
+2025-11-02 22:13:38 | ✅ STEP 2 COMPLETE: No chunking needed
+2025-11-02 22:13:38 | --------------------------------------------------------------------------------
+2025-11-02 22:13:38 | STEP 3: Embedding Generation
+2025-11-02 22:13:38 | Running on: Local
+2025-11-02 22:13:38 | Loaded 2044 chunks from rag.chunks
+2025-11-02 22:13:38 | Using embedding model: mxbai-embed-large v1.3.0
+2025-11-02 22:13:39 | Found existing embeddings table with 2044 chunks
+2025-11-02 22:13:40 | ✅ NO CHUNKS NEED EMBEDDING - All embeddings are up to date
+2025-11-02 22:13:40 | ✅ STEP 3 COMPLETE: No embedding generation needed
+2025-11-02 22:13:40 | --------------------------------------------------------------------------------
+2025-11-02 22:13:40 | STEP 4: Lucene Index Building
+2025-11-02 22:13:40 | Loading chunks and embeddings from Delta tables
+2025-11-02 22:13:40 | Loaded 2044 chunks from rag.chunks
+2025-11-02 22:13:40 | Loaded 2044 embeddings from rag.embeddings
+2025-11-02 22:13:40 | Joining chunks with embeddings
+2025-11-02 22:13:40 | After join: 1810 chunks with valid embeddings
+2025-11-02 22:13:40 | Determining chunks needing indexing
+2025-11-02 22:14:01 | STEP 2: Document Chunking
+2025-11-02 22:14:20 | ================================================================================
+2025-11-02 22:14:20 | 🚀 NEW PIPELINE RUN STARTING AT: 2025-11-02T22:14:20.722007
+2025-11-02 22:14:20 | ================================================================================
+2025-11-02 22:14:20 | STEP 1: Document Normalization
+2025-11-02 22:14:20 | --------------------------------------------------------------------------------
+2025-11-02 22:14:38 | ================================================================================
+2025-11-02 22:14:38 | 🚀 NEW PIPELINE RUN STARTING AT: 2025-11-02T22:14:38.290742
+2025-11-02 22:14:38 | ================================================================================
+2025-11-02 22:14:38 | STEP 1: Document Normalization
+2025-11-02 22:14:38 | --------------------------------------------------------------------------------
+2025-11-02 22:14:51 | STEP 3: Embedding Generation
+2025-11-02 22:14:51 | Running on: Local
+2025-11-02 22:14:56 | Loaded 2044 chunks from rag.chunks
+2025-11-02 22:14:56 | Using embedding model: mxbai-embed-large v1.3.0
+2025-11-02 22:14:58 | Found existing embeddings table with 2044 chunks
+2025-11-02 22:14:59 | ✅ NO CHUNKS NEED EMBEDDING - All embeddings are up to date
+2025-11-02 22:14:59 | ✅ STEP 3 COMPLETE: No embedding generation needed
+2025-11-02 22:14:59 | --------------------------------------------------------------------------------
+2025-11-02 22:14:59 | STEP 4: Lucene Index Building
+2025-11-02 22:14:59 | Loading chunks and embeddings from Delta tables
+2025-11-02 22:15:00 | Loaded 2044 chunks from rag.chunks
+2025-11-02 22:15:00 | Loaded 2044 embeddings from rag.embeddings
+2025-11-02 22:15:00 | Joining chunks with embeddings
+2025-11-02 22:15:18 | STEP 3: Embedding Generation
+2025-11-02 22:15:18 | Running on: Local
+2025-11-02 22:15:31 | STEP 4: Lucene Index Building
+2025-11-02 22:15:32 | Loading chunks and embeddings from Delta tables
+2025-11-02 22:15:43 | STEP 4: Lucene Index Building
+2025-11-02 22:15:44 | Loading chunks and embeddings from Delta tables
