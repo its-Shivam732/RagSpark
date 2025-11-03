@@ -447,7 +447,6 @@ graph TD
 - Scala 2.12.18
 - Apache Spark 3.5.3
 - SBT version 1.11.7
-- Java 11)
 
 **For Embeddings:**
 - Ollama service
