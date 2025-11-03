@@ -716,25 +716,3 @@ After running the pipeline:
 
 ---
 
-## 📄 License
-
-[Specify your license]
-
-## 👥 Contributors
-
-[List contributors]
-
----
-
-## 💬 Support
-
-For issues or questions:
-1. Check audit logs
-2. Review error messages
-3. Verify Config.scala
-
----
-
-**Happy RAG Building! 🚀**
-
-Made with ❤️ using Scala + Spark + Delta Lake + Lucene
