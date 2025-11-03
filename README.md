@@ -7,6 +7,7 @@ A complete **Retrieval-Augmented Generation (RAG)** pipeline built with Scala, A
 ---
 
 ## 📋 Table of Contents
+ GO To - [Results/Audit Logs](#-resultsaudit-logs)
 
 - [Architecture](#-architecture)
 - [Pipeline Flow](#-pipeline-flow)
