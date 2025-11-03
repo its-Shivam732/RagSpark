@@ -110,7 +110,7 @@ Schema: chunkId, docId, docHash, offset, chunk, chunkHash, language, title, vers
 
 - **Max size:** 1200 characters (fits embedding model limits)
 - **Overlap:** 200 characters (preserves context)
-- **IDs:** Position-based (deterministic)
+- **IDs:** Offset-based (deterministic)
 - **Optimization:** Two-level (document + chunk)
 </details>
 
