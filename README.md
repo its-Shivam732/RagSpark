@@ -8,8 +8,6 @@ The result metrics are implemented using an audit log approach. To view details,
 ---
 
 ## 📋 Table of Contents
- GO To - [Results/Audit Logs](#-resultsaudit-logs)
-
 - [Architecture](#-architecture)
 - [Pipeline Flow](#-pipeline-flow)
   - [Step 1: Document Normalization](#step-1-document-normalization)
