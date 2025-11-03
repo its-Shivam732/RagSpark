@@ -20,7 +20,7 @@ A complete **Retrieval-Augmented Generation (RAG)** pipeline built with Scala, A
   - [Local Mode](#local-mode)
   - [EMR Mode](#emr-mode)
 - [Search Query Flow](#-search-query-flow)
-- [Configuration](#-configuration)
+- [Configuration](#configuration)
 - [Incremental Updates](#-incremental-updates)
 - [Project Structure](#-project-structure)
 - [Performance](#-performance)
