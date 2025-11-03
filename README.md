@@ -559,7 +559,7 @@ aws s3 cp pdfs.txt s3://your-bucket/input/
 
 #### 2. Run on EMR
 Run on main ec2 instance of cluster.
-**Document Normalization:**
+
 ```bash
 spark-submit \
   --class com.rag.RAGDocNormalized \
@@ -585,11 +585,12 @@ spark-submit \
 # List logs
 aws s3 ls s3://your-bucket/rag-data/logs/ --recursive
 
-# View log
-aws s3 cp s3://your-bucket/rag/logs/audit/[filename].log - | less
-```
 
 ---
+
+
+
+
 
 ## ⚙️ Configuration
 
@@ -650,25 +651,6 @@ The pipeline processes **only new or modified content** at each stage.
 
 ---
 
-## 📁 Project Structure
-
-```
-rag-pipeline/
-├── src/main/scala/com/rag/
-│   ├── RAGDocNormalized.scala    # Step 1: PDF extraction
-│   ├── RAGChunks.scala           # Step 2: Chunking
-│   ├── RAGEmbeddings.scala       # Step 3: Embeddings
-│   ├── RagLuceneIndex.scala      # Step 4: Indexing
-│   ├── AuditLogger.scala         # Logging
-│   ├── Config.scala              # Configuration
-│   ├── Chunker.scala             # Chunking logic
-│   ├── Vectors.scala             # Vector operations
-│   └── Ollama.scala              # Ollama client
-├── build.sbt
-├── README.md
-└── pdfs.txt
-```
-
 ---
 
 ## ⚡ Performance
@@ -715,9 +697,7 @@ spark.sql("OPTIMIZE rag.embeddings")
 | Category | Technology |
 |----------|------------|
 | **Language** | Scala 2.12 |
-| **Processing** | Apache Spark 3.4 |
-| **Storage** | Delta Lake 2.4 |
-| **Search** | Apache Lucene 9.x |
+| **Processing** | Apache Spark 3.5.3 |
 | **Embeddings** | Ollama (mxbai-embed-large) |
 | **Infrastructure** | AWS EMR, S3 |
 
