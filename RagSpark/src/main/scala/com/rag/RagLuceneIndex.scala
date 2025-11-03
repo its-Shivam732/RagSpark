@@ -419,23 +419,6 @@ object RagLuceneIndex {
       val totalAdded = results.map(_._3).sum
       val totalUpdated = results.map(_._4).sum
 
-      // Log comprehensive summary of indexing operation
-      AuditLogger.audit("=" * 80)
-      AuditLogger.audit("Lucene Index Build/Update Summary:")
-      AuditLogger.audit("=" * 80)
-
-      // Log per-shard statistics
-      results.sortBy(_._1).foreach { case (shardId, path, added, updated) =>
-        AuditLogger.audit(f"Shard $shardId%2d: added=$added%,6d  updated=$updated%,6d")
-      }
-
-      // Log overall statistics
-      AuditLogger.audit("=" * 80)
-      AuditLogger.audit(s"Index Statistics:")
-      AuditLogger.audit(s"  Total shards: ${results.length}")
-      AuditLogger.audit(s"  Total documents added: $totalAdded")
-      AuditLogger.audit(s"  Total documents updated: $totalUpdated")
-      AuditLogger.audit("=" * 80)
       AuditLogger.audit("✅ STEP 4 COMPLETE: Lucene index updated successfully")
       AuditLogger.audit("=" * 80)
       AuditLogger.audit("PIPELINE RUN COMPLETED SUCCESSFULLY")
