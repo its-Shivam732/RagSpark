@@ -19,6 +19,7 @@ A complete **Retrieval-Augmented Generation (RAG)** pipeline built with Scala, A
   - [Prerequisites](#prerequisites)
   - [Local Mode](#local-mode)
   - [EMR Mode](#emr-mode)
+- [Search Query Flow](#-search-query-flow)
 - [Configuration](#-configuration)
 - [Incremental Updates](#-incremental-updates)
 - [Project Structure](#-project-structure)
@@ -590,10 +591,24 @@ aws s3 ls s3://your-bucket/rag-data/logs/ --recursive
 ---
 
 
+## Search Query Flow
+1. **Embed Query**: Use Ollama to generate query vector.
+2. **Search**: `RagSearch.searchAllShards` (fan-out to shards).
+3. **Retrieve Context**: Pack top-k results into prompt.
+4. **Generate Answer**: Use Ollama chat API with system/user messages.
+5. **Response**: Answer + sources + metadata.
+
+**Query Example** (cURL): curl -X POST http://localhost:8080/api/v1/query \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "seasonal decomposition time series analysis to TravisTorrent data",
+    "topK": 5,
+    "embedModel": "mxbai-embed-large",
+    "chatModel": "llama3"
+  }'
 
 
-
-## ⚙️ Configuration
+## Configuration
 
 Configuration is centralized in `Config` object:
 
