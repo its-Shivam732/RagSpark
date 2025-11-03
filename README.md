@@ -490,12 +490,10 @@ Action: Consider adjusting numShards or reviewing docId distribution
 ### Prerequisites
 
 **Software:**
-- Scala 2.12+
-- Apache Spark 3.4+
-- Delta Lake 2.4+
-- Apache Lucene 9.x
-- SBT
-- Java 11+
+- Scala 2.12.18
+- Apache Spark 3.5.3
+- SBT version 1.11.7
+- Java 11)
 
 **For Embeddings:**
 - Ollama service
