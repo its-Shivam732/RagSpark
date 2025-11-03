@@ -189,7 +189,7 @@ Each Lucene document contains:
 
 ---
 
-## 📝 Results(Audit Logs)
+# 📝 Results(Audit Logs)
 
 The `AuditLogger` tracks every pipeline execution with detailed metrics and status updates.
 
