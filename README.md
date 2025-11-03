@@ -15,7 +15,7 @@ A complete **Retrieval-Augmented Generation (RAG)** pipeline built with Scala, A
   - [Step 3: Embedding Generation](#step-3-embedding-generation)
   - [Step 4: Lucene Index Building](#step-4-lucene-index-building)
 - [Data Flow](#-data-flow)
-- [Results/Audit Logs](#-audit-logs)
+- [Results/Audit Logs](#-results(audit-logs))
 - [Getting Started](#-getting-started)
   - [Prerequisites](#prerequisites)
   - [Local Mode](#local-mode)
@@ -204,7 +204,7 @@ graph TD
 
 ---
 
-## 📝 Audit Logs
+## 📝 Results(Audit Logs)
 
 The `AuditLogger` tracks every pipeline execution with detailed metrics and status updates.
 
