@@ -447,41 +447,6 @@ PIPELINE RUN COMPLETED SUCCESSFULLY
 
 ---
 
-### 🚨 Troubleshooting with Logs
-
-**Problem:** Slow embedding generation
-```
-Look for: "Generating embeddings in X batches"
-Action: Reduce batchSize if too slow, increase if batches are fast
-```
-
-**Problem:** High failure rate
-```
-Look for: "PDF extraction: X successful, Y failed"
-Action: Check failed PDF paths, verify file accessibility
-```
-
-**Problem:** Unexpected re-processing
-```
-Look for: "Found X needing..." when expecting 0
-Action: Verify content hasn't changed, check hash calculations
-```
-
-**Problem:** Uneven shard distribution
-```
-Look for: Shard distribution stats in Step 4
-Action: Consider adjusting numShards or reviewing docId distribution
-```
-
----
-
-### 💡 Pro Tips
-
-1. **Track duration:** Subtract start time from end time for each step
-2. **Monitor trends:** Compare "added" counts across runs
-3. **Verify incremental:** Ensure "NO CHUNKS NEED..." appears when no changes
-4. **Check ratios:** Embeddings/chunks should be ~85-90% (some filtering expected)
-5. **Watch for warnings:** ⚠️ symbols indicate potential issues
 
 ---
 
