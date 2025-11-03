@@ -22,7 +22,6 @@ A complete **Retrieval-Augmented Generation (RAG)** pipeline built with Scala, A
 - [Search Query Flow](#search-query-flow)
 - [Configuration](#configuration)
 - [Incremental Updates](#-incremental-updates)
-- [Project Structure](#-project-structure)
 - [Performance](#-performance)
 - [Troubleshooting](#-troubleshooting)
 
