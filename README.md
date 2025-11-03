@@ -13,7 +13,7 @@ This is a complete **Retrieval-Augmented Generation (RAG)** pipeline built with 
   - [Step 3: Embedding Generation](#step-3-embedding-generation-ragembeddings)
   - [Step 4: Lucene Index Building](#step-4-lucene-index-building-ragluceneindex)
 - [Data Flow Diagram](#data-flow-diagram)
-- [Results/Audit Logs](#audit-logs)
+- [Audit Logs](#audit-logs)
 - [Running the Pipeline](#running-the-pipeline)
   - [Prerequisites](#prerequisites)
   - [Local Mode](#local-mode)
