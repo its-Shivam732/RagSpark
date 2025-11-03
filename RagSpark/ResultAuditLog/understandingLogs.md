@@ -1,5 +1,5 @@
 
-### 🔍 Understanding the Results/Audit Log
+### 🔍 Understanding the Results/Audit Log https://github.com/its-Shivam732/RagSpark/blob/main/RagSpark/ResultAuditLog/rag_audit.log
 For result metrics, I used an audit log–based design that tracks each important pipeline event and result. This ensures complete visibility into execution flow and simplifies validation and performance analysis.
 
 The audit log shows **three complete pipeline runs** demonstrating incremental processing:
