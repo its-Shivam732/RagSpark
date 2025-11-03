@@ -4,7 +4,7 @@ import org.apache.spark.sql.{DataFrame, SparkSession}
 import org.apache.spark.sql.functions._
 import io.delta.tables._
 import scala.util.{Try, Success, Failure}
-import scala.collection.mutable.ArrayBuffer
+import scala.annotation.tailrec
 
 /**
  * RAGEmbeddings: Generates vector embeddings for document chunks
@@ -26,6 +26,100 @@ object RAGEmbeddings {
   val batchSize = Config.batchSize        // Number of chunks to embed in each batch
   val embPath = Config.embeddingsPath     // Path to Delta table storing embeddings
   val chunksPath = Config.chunksPath      // Path to Delta table containing document chunks
+
+  /**
+   * Case class to represent the result of embedding a single chunk
+   */
+  case class EmbeddingResult(chunkId: String, chunkHash: String, embedder: String, vector: Array[Float])
+
+  /**
+   * Case class to track batch processing state
+   *
+   * @param currentBatch The current batch number being processed
+   * @param results Accumulated list of successful embedding results
+   */
+  case class BatchProcessingState(currentBatch: Int, results: List[EmbeddingResult])
+
+  /**
+   * Processes embeddings in batches using a tail-recursive approach
+   *
+   * This function replaces the while loop with var with a functional recursive approach.
+   *
+   * @param rows Array of rows to process
+   * @param ollama Ollama client for generating embeddings
+   * @param embedModel Name of the embedding model
+   * @param batchSize Number of chunks per batch
+   * @param currentIndex Current position in the rows array
+   * @param totalBatches Total number of batches
+   * @param accumulator Accumulated results so far
+   * @return List of successfully generated embeddings
+   */
+  @tailrec
+  private def processBatchesRecursive(
+                                       rows: Array[org.apache.spark.sql.Row],
+                                       ollama: Ollama,
+                                       embedModel: String,
+                                       batchSize: Int,
+                                       currentIndex: Int,
+                                       totalBatches: Int,
+                                       accumulator: List[EmbeddingResult]
+                                     ): List[EmbeddingResult] = {
+
+    // Base case: processed all rows
+    if (currentIndex >= rows.length) {
+      accumulator
+    } else {
+      // Extract current batch of chunks
+      val batch = rows.slice(currentIndex, currentIndex + batchSize)
+
+      // Extract text content for embedding
+      val texts = batch.map(_.getAs[String]("chunk")).toVector
+
+      val batchNum = currentIndex / batchSize + 1
+
+      println(s"Processing batch $batchNum/$totalBatches (${texts.size} chunks)")
+
+      // Attempt to generate embeddings for this batch
+      // Using Try for graceful error handling - one batch failure doesn't stop the entire process
+      val newResults = Try(ollama.embed(texts, embedModel)) match {
+        case Success(vectors) =>
+          // Successfully generated embeddings for this batch
+
+          // Process each chunk and its corresponding vector
+          val batchResults = batch.zip(vectors).map { case (r, v) =>
+            val cid = r.getAs[String]("chunkId")
+            val hash = r.getAs[String]("chunkHash")
+
+            // Normalize the vector using L2 normalization
+            // This ensures all vectors have unit length for better similarity comparisons
+            val norm = Vectors.l2(v)
+
+            // Create embedding result
+            EmbeddingResult(cid, hash, embedModel, norm)
+          }.toList
+
+          println(s"Batch $batchNum: Successfully embedded ${vectors.length} chunks")
+          batchResults
+
+        case Failure(e) =>
+          // Batch failed - log error but continue processing remaining batches
+          println(s"Batch $batchNum failed: ${e.getMessage}")
+          AuditLogger.audit(s"  WARNING: Batch $batchNum failed to embed - ${e.getMessage}")
+          List.empty[EmbeddingResult]
+      }
+
+      // Recursive call to process next batch
+      processBatchesRecursive(
+        rows,
+        ollama,
+        embedModel,
+        batchSize,
+        currentIndex + batchSize,
+        totalBatches,
+        accumulator ++ newResults
+      )
+    }
+  }
 
   /**
    * Main entry point for embedding generation
@@ -140,57 +234,22 @@ object RAGEmbeddings {
       // Each row contains chunkId, text content, and hash for change detection
       val rows = toEmbedDF.select("chunkId", "chunk", "chunkHash").collect()
 
-      // ArrayBuffer to accumulate successfully generated embeddings
-      // Stores tuples of (chunkId, chunkHash, modelName, normalizedVector)
-      val results = ArrayBuffer[(String, String, String, Array[Float])]()
-
-      // Batch processing variables
-      var i = 0  // Current position in the rows array
+      // Calculate total number of batches
       val totalBatches = math.ceil(rows.length.toDouble / batchSize).toInt
 
       AuditLogger.audit(s"Generating embeddings in $totalBatches batches (batch size: $batchSize)")
 
-      // Process chunks in batches to avoid memory issues and rate limiting
-      while (i < rows.length) {
-        // Extract current batch of chunks
-        val batch = rows.slice(i, i + batchSize)
-
-        // Extract text content for embedding
-        val texts = batch.map(_.getAs[String]("chunk")).toVector
-
-        val batchNum = i / batchSize + 1
-
-        println(s"Processing batch $batchNum/$totalBatches (${texts.size} chunks)")
-
-        // Attempt to generate embeddings for this batch
-        // Using Try for graceful error handling - one batch failure doesn't stop the entire process
-        Try(ollama.embed(texts, embedModel)) match {
-          case Success(vectors) =>
-            // Successfully generated embeddings for this batch
-
-            // Process each chunk and its corresponding vector
-            batch.zip(vectors).foreach { case (r, v) =>
-              val cid = r.getAs[String]("chunkId")
-              val hash = r.getAs[String]("chunkHash")
-
-              // Normalize the vector using L2 normalization
-              // This ensures all vectors have unit length for better similarity comparisons
-              val norm = Vectors.l2(v)
-
-              // Add to results buffer
-              results += ((cid, hash, embedModel, norm))
-            }
-            println(s"Batch $batchNum: Successfully embedded ${vectors.length} chunks")
-
-          case Failure(e) =>
-            // Batch failed - log error but continue processing remaining batches
-            println(s"Batch $batchNum failed: ${e.getMessage}")
-            AuditLogger.audit(s"  WARNING: Batch $batchNum failed to embed - ${e.getMessage}")
-        }
-
-        // Move to next batch
-        i += batchSize
-      }
+      // Process chunks in batches using tail-recursive function
+      // This replaces the while loop with var i
+      val results = processBatchesRecursive(
+        rows,
+        ollama,
+        embedModel,
+        batchSize,
+        currentIndex = 0,
+        totalBatches,
+        accumulator = List.empty[EmbeddingResult]
+      )
 
       // Calculate success and failure statistics
       val successCount = results.size
@@ -204,9 +263,11 @@ object RAGEmbeddings {
         throw new RuntimeException("Embedding generation failed completely")
       }
 
-      // Convert results buffer to DataFrame
+      // Convert results list to DataFrame
       // Add metadata columns for model version and timestamp
-      val embDF = results.toSeq.toDF("chunkId", "chunkHash", "embedder", "vector")
+      val embDF = results.map { r =>
+          (r.chunkId, r.chunkHash, r.embedder, r.vector)
+        }.toDF("chunkId", "chunkHash", "embedder", "vector")
         .withColumn("embedder_ver", lit(embedVer))                // Model version
         .withColumn("version_ts", current_timestamp())            // When embeddings were generated
 

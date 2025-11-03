@@ -7,6 +7,7 @@ import org.apache.pdfbox.pdmodel.PDDocument
 import org.apache.pdfbox.text.PDFTextStripper
 import java.net.URI
 import java.io.InputStream
+import scala.util.{Try, Using}
 
 /**
  * RAGDocNormalized: Extracts and normalizes text from PDF documents
@@ -30,7 +31,7 @@ object RAGDocNormalized {
    * - Uses Apache PDFBox for PDF text extraction
    * - Normalizes whitespace (collapses multiple spaces, trims)
    * - Handles errors gracefully (returns empty string on failure)
-   * - Properly closes resources in finally block
+   * - Uses functional loan pattern for resource management without var
    *
    * For S3 files:
    * - Uses Hadoop FileSystem API which integrates with Spark's S3 credentials
@@ -40,10 +41,8 @@ object RAGDocNormalized {
    * @return Extracted and normalized text content, or empty string if extraction fails
    */
   def extractTextFromPDF(uri: String): String = {
-    var doc: PDDocument = null
-    var in: InputStream = null
-    try {
-      // Parse the URI to determine the appropriate access method
+    // Helper function to open input stream based on URI scheme
+    def openInputStream(uri: String): InputStream = {
       val inputUri = new URI(uri)
 
       if (uri.startsWith("s3a://") || uri.startsWith("s3://")) {
@@ -52,32 +51,43 @@ object RAGDocNormalized {
         val conf = new org.apache.hadoop.conf.Configuration()
         val fs = org.apache.hadoop.fs.FileSystem.get(inputUri, conf)
         val path = new org.apache.hadoop.fs.Path(uri)
-        in = fs.open(path)
+        fs.open(path)
       } else {
         // For file:// or http:// URIs, use standard Java URL opening
-        in = new java.net.URL(uri).openStream()
+        new java.net.URL(uri).openStream()
       }
+    }
 
-      // Load the PDF document from the input stream
-      doc = PDDocument.load(in)
+    // Loan pattern: ensures resource is closed after use
+    def using[R <: AutoCloseable, T](resource: => R)(f: R => T): T = {
+      val r = resource
+      try {
+        f(r)
+      } finally {
+        if (r != null) {
+          try { r.close() } catch { case _: Throwable => }
+        }
+      }
+    }
 
-      // Extract text from all pages using PDFBox's text stripper
-      val stripper = new PDFTextStripper()
-      val raw = stripper.getText(doc)
+    // Extract text with proper resource management
+    try {
+      using(openInputStream(uri)) { inputStream =>
+        using(PDDocument.load(inputStream)) { pdfDoc =>
+          // Extract text from all pages using PDFBox's text stripper
+          val stripper = new PDFTextStripper()
+          val raw = stripper.getText(pdfDoc)
 
-      // Normalize whitespace: replace any sequence of whitespace with single space, then trim
-      raw.replaceAll("\\s+", " ").trim
-
+          // Normalize whitespace: replace any sequence of whitespace with single space, then trim
+          raw.replaceAll("\\s+", " ").trim
+        }
+      }
     } catch {
       case e: Exception =>
         // Log warning but don't fail the entire job
         // This allows the pipeline to continue even if some PDFs are corrupted or inaccessible
         println(s"[WARN] Failed to read $uri : ${e.getMessage}")
         ""  // Return empty string for failed extractions
-    } finally {
-      // Always close resources to prevent memory leaks
-      if (doc != null) try { doc.close() } catch { case _: Throwable => }
-      if (in != null) try { in.close() } catch { case _: Throwable => }
     }
   }
 

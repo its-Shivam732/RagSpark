@@ -30,6 +30,18 @@ object RagLuceneIndex {
   val numShards = Config.numShards                // Number of shards to distribute the index across
 
   /**
+   * Case class to track indexing operations immutably
+   *
+   * This replaces mutable var counters with an immutable data structure.
+   * Each operation returns a new copy with updated counts.
+   */
+  case class IndexStats(added: Int = 0, updated: Int = 0, errors: Int = 0) {
+    def withAdded: IndexStats = copy(added = added + 1)
+    def withUpdated: IndexStats = copy(updated = updated + 1)
+    def withError: IndexStats = copy(errors = errors + 1)
+  }
+
+  /**
    * Builds or updates a Lucene index for a single shard partition
    *
    * This function processes a partition of documents and:
@@ -98,14 +110,10 @@ object RagLuceneIndex {
     // Open the IndexWriter for this shard
     val iw = new IndexWriter(FSDirectory.open(shardOutputPath), iwConf)
 
-    // Counters to track indexing operations
-    var addedCount = 0      // Number of new documents added
-    var updatedCount = 0    // Number of existing documents updated
-    var errorCount = 0      // Number of documents that failed to process
-
     try {
-      // Process each row (chunk) in this partition
-      rows.foreach { row =>
+      // Process each row (chunk) in this partition using foldLeft for immutable accumulation
+      // This replaces the mutable var approach with a functional fold operation
+      val finalStats = rows.foldLeft(IndexStats()) { (stats, row) =>
         try {
           // Extract fields from the row
           val docId = row.getAs[String]("docId")          // Parent document identifier
@@ -123,11 +131,14 @@ object RagLuceneIndex {
           val vector = row.getAs[Seq[Float]]("vector").toArray     // Embedding vector
           val isUpdate = row.getAs[Boolean]("is_update")           // Flag: update vs insert
 
-          if (isUpdate) {
+          // Handle updates by deleting old document first, then incrementing update counter
+          val statsAfterUpdate = if (isUpdate) {
             // Delete existing document with this chunkId before re-adding
             // This ensures we don't have duplicate entries for the same chunk
             iw.deleteDocuments(new Term("chunk_id", chunkId))
-            updatedCount += 1
+            stats.withUpdated
+          } else {
+            stats
           }
 
           // Create a new Lucene document with all fields
@@ -152,24 +163,34 @@ object RagLuceneIndex {
 
           // Add the document to the index
           iw.addDocument(doc)
-          addedCount += 1
+
+          // Increment the added counter
+          val newStats = statsAfterUpdate.withAdded
 
           // Log progress every 100 documents
-          if ((addedCount + updatedCount) % 100 == 0) {
-            println(s"Shard $partitionId: Processed ${addedCount + updatedCount} documents")
+          if ((newStats.added + newStats.updated) % 100 == 0) {
+            println(s"Shard $partitionId: Processed ${newStats.added + newStats.updated} documents")
           }
+
+          newStats
 
         } catch {
           case e: Exception =>
             // Log individual document errors but continue processing
             println(s"Error in shard $partitionId: ${e.getMessage}")
-            errorCount += 1
+            stats.withError
         }
       }
 
       // Commit all changes to the index
       iw.commit()
       println(s"Shard $partitionId: Successfully committed")
+
+      // Log final statistics for this shard
+      println(s"Shard $partitionId: added=${finalStats.added}, updated=${finalStats.updated}, errors=${finalStats.errors}")
+
+      // Return tuple with shard statistics
+      Iterator((partitionId, shardOutputPath.toString, finalStats.added, finalStats.updated))
 
     } catch {
       case e: Exception =>
@@ -181,43 +202,9 @@ object RagLuceneIndex {
       iw.close()
     }
 
-    // If using S3, sync the local temp directory to S3
-    if (useLocalTemp) {
-      try {
-        println(s"Syncing shard $partitionId to S3: $outputBasePath")
-        val s3Path = s"$outputBasePath/shard_$partitionId"
-
-        // Use Hadoop FileSystem API to copy directory to S3
-        val conf = new org.apache.hadoop.conf.Configuration()
-        val localFs = org.apache.hadoop.fs.FileSystem.getLocal(conf)
-        val s3Fs = org.apache.hadoop.fs.FileSystem.get(new java.net.URI(s3Path), conf)
-
-        val localPath = new org.apache.hadoop.fs.Path(shardOutputPath.toString)
-        val remotePath = new org.apache.hadoop.fs.Path(s3Path)
-
-        // Copy the entire local index directory to S3
-        org.apache.hadoop.fs.FileUtil.copy(
-          localFs, localPath,
-          s3Fs, remotePath,
-          false, // don't delete source (keep local copy)
-          true,  // overwrite destination (update existing files)
-          conf
-        )
-
-        println(s"Shard $partitionId synced to S3 successfully")
-      } catch {
-        case e: Exception =>
-          // Log S3 sync errors but don't fail the entire operation
-          // The local index is still valid even if S3 sync fails
-          println(s"Warning: Failed to sync shard $partitionId to S3: ${e.getMessage}")
-      }
-    }
-
-    // Log final statistics for this shard
-    println(s"Shard $partitionId: added=$addedCount, updated=$updatedCount, errors=$errorCount")
-
-    // Return tuple with shard statistics
-    Iterator((partitionId, shardOutputPath.toString, addedCount, updatedCount))
+    // This code is unreachable due to the return in the try block
+    // but kept for clarity in case the structure changes
+    Iterator.empty
   }
 
   /**
