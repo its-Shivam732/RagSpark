@@ -208,7 +208,7 @@ The `AuditLogger` tracks every pipeline execution with detailed metrics and stat
 ### 📍 Result Location
 
 **GitHub Location:** https://github.com/its-Shivam732/RagSpark/blob/main/RagSpark/ResultAuditLog/
-NOTE----these are just sample on few pdfs from MSR corpus ran on local.
+NOTE----these are just sample on few pdfs from MSR corpus for demo purposes.
 
 ### 🔍 Understanding the Results/Audit Log
 
